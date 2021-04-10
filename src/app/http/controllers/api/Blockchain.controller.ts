@@ -1,7 +1,8 @@
 import {Controller} from "@extollo/lib"
-import {Injectable} from "@extollo/di"
+import {Injectable, Inject} from "@extollo/di"
 import {TransactionResource, TransactionResourceItem} from "../../../rtdb/TransactionResource"
-import {one} from "@extollo/util"
+import {many, one} from "@extollo/util"
+import {Blockchain as BlockchainService} from "../../../units/Blockchain"
 
 /**
  * Blockchain Controller
@@ -10,6 +11,20 @@ import {one} from "@extollo/util"
  */
 @Injectable()
 export class Blockchain extends Controller {
+    @Inject()
+    protected readonly blockchain!: BlockchainService
+
+    /**
+     * Read the version of the blockchain held by this host, as it currently exists.
+     */
+    public async readBlockchain() {
+        return many((await this.blockchain.read()).map(x => {
+            // @ts-ignore
+            delete x.firebaseID
+            return x
+        }))
+    }
+
     /**
      * Post a new transaction to the blockchain. This is only intended for testing.
      */

@@ -214,6 +214,13 @@ export class Blockchain extends Unit {
     }
 
     /**
+     * Get a list of all blocks in the chain, in order.
+     */
+    public async read(): Promise<BlockResourceItem[]> {
+        return BlockResource.collect().all()
+    }
+
+    /**
      * Given a client-submitted transaction, generate a block encounter transaction record.
      * @param item
      * @protected
