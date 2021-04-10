@@ -33,7 +33,7 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
     async getNextID(): Promise<number> {
         return new Promise<number>((res, rej) => {
             this.ref().orderByChild('seqID')
-                .on('value', snapshot => {
+                .once('value', snapshot => {
                     res((this.resolveObject(snapshot.val()).reverse()?.[0]?.seqID ?? -1) + 1)
                 }, rej)
         })
@@ -44,7 +44,7 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
         return new Promise<T | undefined>((res, rej) => {
             this.ref().orderByChild('seqID')
                 .startAt(i).endAt(i)
-                .on('value', snapshot => res(this.resolveObject(snapshot.val())[0]), rej)
+                .once('value', snapshot => res(this.resolveObject(snapshot.val())[0]), rej)
         })
     }
 
@@ -53,7 +53,7 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
         return new Promise<Collection<T>>((res, rej) => {
             this.ref().orderByChild('seqID')
                 .startAt(start).endAt(end)
-                .on('value', snapshot => {
+                .once('value', snapshot => {
                     res(new Collection<T>(this.resolveObject(snapshot.val())))
                 }, rej)
         })
@@ -63,7 +63,7 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
     async count(): Promise<number> {
         return new Promise<number>((res, rej) => {
             this.ref().orderByChild('seqID')
-                .on('value', snapshot => {
+                .once('value', snapshot => {
                     res(this.resolveObject(snapshot.val()).length)
                 }, rej)
         })
@@ -105,7 +105,8 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
                 .orderByChild('seqID')
                 .startAt(item.seqID)
                 .limitToFirst(1)
-                .on('value', snapshot => {
+                .once('value', snapshot => {
+                    item.firebaseID = snapshot.key || ''
                     res()
                 })
         })
