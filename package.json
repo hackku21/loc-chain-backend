@@ -8,16 +8,16 @@
     "lib": "lib"
   },
   "dependencies": {
-    "@extollo/cli": "^0.4.1",
-    "@extollo/di": "^0.4.2",
-    "@extollo/lib": "^0.1.2",
-    "@extollo/orm": "^0.1.1",
-    "@extollo/util": "^0.3.1",
+    "@extollo/cli": "^0.4.4",
+    "@extollo/di": "^0.4.5",
+    "@extollo/lib": "^0.1.4",
+    "@extollo/orm": "^0.1.4",
+    "@extollo/util": "^0.3.3",
     "bcrypt": "^5.0.1",
     "copyfiles": "^2.4.1",
     "firebase-admin": "^9.6.0",
     "openpgp": "^5.0.0-1",
-    "typescript": "^4.1.3"
+    "typescript": "^4.2.4"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
