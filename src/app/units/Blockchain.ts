@@ -363,7 +363,7 @@ export class Blockchain extends Unit {
 
         await this.firebase.unlock('block')
         if ( !resultOfPeerRefresh ) {
-            this.refresh(resultOfPeerRefresh)
+            this.refresh(true)
         }
         return blocks
     }
