@@ -1,5 +1,5 @@
 import {Controller} from "@extollo/lib"
-import {Inject, Injectable} from "@extollo/di"
+import {Injectable} from "@extollo/di"
 import {TransactionResource, TransactionResourceItem} from "../../../rtdb/TransactionResource"
 import {one} from "@extollo/util"
 
@@ -10,7 +10,9 @@ import {one} from "@extollo/util"
  */
 @Injectable()
 export class Blockchain extends Controller {
-
+    /**
+     * Post a new transaction to the blockchain. This is only intended for testing.
+     */
     public async postTransaction() {
         const item: TransactionResourceItem = {
             firebaseID: '',
@@ -25,5 +27,4 @@ export class Blockchain extends Controller {
         await (<TransactionResource> this.make(TransactionResource)).push(item)
         return one(item)
     }
-
 }

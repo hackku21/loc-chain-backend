@@ -5,7 +5,8 @@ import {HTTPStatus} from "@extollo/util";
 /**
  * ValidateEncounterTransaction Middleware
  * --------------------------------------------
- * Put some description here.
+ * Errors out the request if it is missing any fields required to create
+ * a new encounter transaction on the blockchain.
  */
 @Injectable()
 export class ValidateEncounterTransaction extends Middleware {

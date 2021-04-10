@@ -37,7 +37,8 @@ export default {
 
     middleware: {
         global: {
-            pre: ['LogRequest'],
+            pre: [],
+            post: [],
         },
     },
 }

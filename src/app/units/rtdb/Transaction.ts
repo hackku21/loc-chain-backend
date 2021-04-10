@@ -8,10 +8,13 @@ import { Blockchain } from "../Blockchain"
 /**
  * Transaction Unit
  * ---------------------------------------
- * Put some description here.
+ * This unit listens for transactions created on the realtime database.
+ * When new ones come through, it matches them up, validates them, and pushes
+ * them onto this server's blockchain.
  */
 @Singleton()
 export class Transaction extends Unit {
+    /** True if currently processing transactions. */
     private processing: boolean = false
 
     @Inject()
@@ -23,6 +26,7 @@ export class Transaction extends Unit {
     @Inject()
     protected readonly logging!: Logging
 
+    /** Claim the right to process transactions. Returns true if the right was granted. */
     claim() {
         if ( !this.processing ) {
             this.processing = true
@@ -32,10 +36,17 @@ export class Transaction extends Unit {
         return false
     }
 
+    /** Release the right to claim transactions. */
     release() {
         this.processing = false
     }
 
+    /**
+     * Given two transactions, determine whether the came from a valid interaction.
+     * That is, do the two transactions vouch for each-other cryptographically.
+     * @param transaction1
+     * @param transaction2
+     */
     public async compareTransactions(transaction1: TransactionResourceItem, transaction2: TransactionResourceItem) {
         // verify signature
         const result1 = await openpgp.verify({
@@ -59,6 +70,9 @@ export class Transaction extends Unit {
         return (await result1.signatures[0].verified) && (await result2.signatures[0].verified)
     }
 
+    /**
+     * Subscribe to the transactions reference and wait for new transactions to be added.
+     */
     public async up() {
         this.firebase.ref("transaction").on("child_added", async () => {
             this.logging.debug('Received child_added event for transactions reference.')
@@ -110,6 +124,9 @@ export class Transaction extends Unit {
         })
     }
 
+    /**
+     * Release listeners and resources before shutdown.
+     */
     public async down() {
         // Release all subscriptions before shutdown
         this.firebase.ref("transaction").off()

@@ -12,10 +12,15 @@ export interface FirebaseResourceItem {
     seqID: number;
 }
 
+/**
+ * An asynchronous iterable wrapper that enables us to use AsyncCollection
+ * to interact with the Firebase realtime database.
+ */
 @Injectable()
 export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T> {
     protected refName!: RTDBRef
 
+    /** Get the Reference for this resource. */
     ref(): firebase.database.Reference {
         return Application.getApplication().make<FirebaseUnit>(FirebaseUnit).ref(this.refName)
     }

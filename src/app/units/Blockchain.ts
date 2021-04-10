@@ -19,9 +19,11 @@ export class Block implements BlockResourceItem {
     lastBlockHash: string
     lastBlockUUID: string
     proof: string
+
     get config(): Config {
         return Application.getApplication().make(Config)
     }
+
     constructor(rec: BlockResourceItem) {
         this.firebaseID = rec.firebaseID
         this.seqID = rec.seqID

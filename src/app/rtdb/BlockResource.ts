@@ -23,6 +23,7 @@ export interface BlockInfectionTransaction {
 /** Union type of all possible block transactions. */
 export type BlockTransaction = BlockInfectionTransaction | BlockEncounterTransaction
 
+/** Returns true if the item is a valid BlockEncounterTransaction. */
 export function isBlockEncounterTransaction(what: any): what is BlockEncounterTransaction {
     return (
         what
@@ -32,6 +33,7 @@ export function isBlockEncounterTransaction(what: any): what is BlockEncounterTr
     )
 }
 
+/** Returns true if the item is a valid BlockInfectionTransaction. */
 export function isBlockInfectionTransaction(what: any): what is BlockInfectionTransaction {
     return (
         what
@@ -40,6 +42,7 @@ export function isBlockInfectionTransaction(what: any): what is BlockInfectionTr
     )
 }
 
+/** Returns true if the item is a valid BlockTransaction. */
 export function isBlockTransaction(what: any): what is BlockTransaction {
     return isBlockEncounterTransaction(what) || isBlockInfectionTransaction(what)
 }
@@ -48,14 +51,17 @@ export function isBlockTransaction(what: any): what is BlockTransaction {
  * Interface representing a single block in the chain.
  */
 export interface BlockResourceItem extends FirebaseResourceItem {
-    uuid: string;
-    transactions: BlockTransaction[];
-    lastBlockHash: string;
-    lastBlockUUID: string;
-    proof: string;
-    timestamp: number;
+    uuid: string;  // Globally unique ID
+    transactions: BlockTransaction[];  // Transactions validated by this block
+    lastBlockHash: string;  // The combined sha256 hash of the previous block
+    lastBlockUUID: string;  // the UUID of the previous block
+    proof: string;  // the generated proof-of-work string
+    timestamp: number;  // millisecond unix timestamp when this block was created
 }
 
+/**
+ * A Firebase realtime database resource for blocks in the chain.
+ */
 @Injectable()
 export class BlockResource extends FirebaseResource<BlockResourceItem> {
     public static collect(): AsyncCollection<BlockResourceItem> {
