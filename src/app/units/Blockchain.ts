@@ -4,6 +4,7 @@ import {FirebaseUnit} from "./FirebaseUnit"
 import {BlockResource, BlockResourceItem, BlockTransaction} from "../rtdb/BlockResource"
 import {TransactionResourceItem} from "../rtdb/TransactionResource"
 import * as crypto from "crypto"
+import {collect} from "@extollo/util";
 
 export class Block implements BlockResourceItem {
     seqID: number;
@@ -80,7 +81,12 @@ export class Blockchain extends Unit {
     }
 
     public async validate(chain: Block[]) {
+        const blocks = collect<Block>(chain)
+        return blocks.every((block: Block, idx: number) => {
+            if ( idx === 0 ) return true;  // TODO handle genesis
 
+            return block.lastBlockHash === blocks.at(idx)!.hash()
+        })
     }
 
     public async refresh() {
@@ -106,5 +112,13 @@ export class Blockchain extends Unit {
 
     public async down() {
 
+    }
+
+    protected async generateProofOfWork(lastBlock: Block): Promise<string> {
+        const hash = lastBlock.hash()
+
+        // Create a signature from the hash using the server's private key
+
+        return hash
     }
 }
