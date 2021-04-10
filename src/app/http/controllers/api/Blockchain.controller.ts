@@ -26,6 +26,9 @@ export class Blockchain extends Controller {
         }))
     }
 
+    /**
+     * Determine whether the current blockchain is valid.
+     */
     public async validate() {
         const blocks = (await this.blockchain.read()).map(x => new Block(x))
         return {
