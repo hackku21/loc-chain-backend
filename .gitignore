@@ -105,3 +105,4 @@ dist
 
 lib/*
 *.gpg.key
+*.salt
