@@ -16,6 +16,13 @@ class TestClient {
         return bcrypt.hashSync(`${lesserId}-${greaterId}`, this.salt)
     }
 
+    buildExposure() {
+        return {
+            clientID: this.id,
+            timestamp: (new Date).getTime(),
+        }
+    }
+
     async interactWith(otherClient) {
         const hash = otherClient.getHash(this.id)
         const message = openpgp.Message.fromText(hash)
@@ -43,9 +50,15 @@ class TestClient {
     const a_transact = await client_a.interactWith(client_b)
     const b_transact = await client_b.interactWith(client_a)
 
+    // Simulate an encounter between A and B
     console.log(a_transact, b_transact)
     postTo('/api/v1/encounter', a_transact)
     postTo('/api/v1/encounter', b_transact)
+
+    // Simulate B being exposed
+    const b_exposure = client_b.buildExposure()
+    console.log(b_exposure)
+    postTo('/api/v1/exposure', b_exposure)
 })()
 
 function postTo(endpoint, data) {
