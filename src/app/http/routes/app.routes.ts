@@ -12,6 +12,8 @@ Route.group('/api/v1', () => {
     Route.post('/validate', 'api:Blockchain.validate')
         .pre('DebugOnly')
 
+    Route.post('/peer', 'api:Blockchain.peer')
+
     Route.get('/chain', 'api:Blockchain.readBlockchain')
 
     Route.get('/check', 'api:Blockchain.check')

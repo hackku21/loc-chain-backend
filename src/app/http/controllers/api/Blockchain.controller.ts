@@ -2,7 +2,7 @@ import {Controller, Config} from "@extollo/lib"
 import {Injectable, Inject} from "@extollo/di"
 import {TransactionResource, TransactionResourceItem} from "../../../rtdb/TransactionResource"
 import {Iterable, many, one} from "@extollo/util"
-import {Block, Blockchain as BlockchainService} from "../../../units/Blockchain"
+import {Block, Blockchain as BlockchainService, Peer} from "../../../units/Blockchain"
 import {ExposureResource, ExposureResourceItem} from "../../../rtdb/ExposureResource";
 import {FirebaseUnit} from "../../../units/FirebaseUnit"
 import { BlockResource, BlockResourceItem } from "../../../rtdb/BlockResource"
@@ -100,5 +100,17 @@ export class Blockchain extends Controller {
     
         let blocks = (Object.values(snapshot.val()) as BlockResourceItem[]).filter((item: BlockResourceItem) => item.seqID !== 0)
         return many(blocks)
+    }
+
+    public async peer() {
+        const url = this.request.input('host')
+        const name = this.request.input('name')
+        const peer: Peer = {
+            host: String(url)
+            } 
+        if (name) {
+            peer.name = String(name)
+        }
+        await this.blockchain.registerPeer(peer)
     }
 }
