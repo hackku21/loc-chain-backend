@@ -1,12 +1,20 @@
 import { Singleton, Inject } from "@extollo/di"
 import { Unit, Logging, Config, Application } from "@extollo/lib"
 import { FirebaseUnit } from "./FirebaseUnit"
-import { BlockEncounterTransaction, BlockResource, BlockResourceItem, BlockTransaction } from "../rtdb/BlockResource"
+import {
+    BlockEncounterTransaction,
+    BlockResource,
+    BlockResourceItem,
+    BlockTransaction,
+    isBlockResourceItem
+} from "../rtdb/BlockResource"
 import { TransactionResourceItem } from "../rtdb/TransactionResource"
 import * as openpgp from "openpgp"
 import * as crypto from "crypto"
+import axios from "axios"
 import { collect, uuid_v4 } from "@extollo/util"
-import {ExposureResourceItem} from "../rtdb/ExposureResource";
+import {ExposureResourceItem} from "../rtdb/ExposureResource"
+import {PeerResource} from "../rtdb/PeerResource"
 
 /**
  * Utility wrapper class for a block in the chain.
@@ -20,6 +28,7 @@ export class Block implements BlockResourceItem {
     lastBlockHash: string
     lastBlockUUID: string
     proof: string
+    waitTime: number
 
     get config(): Config {
         return Application.getApplication().make(Config)
@@ -34,6 +43,7 @@ export class Block implements BlockResourceItem {
         this.lastBlockUUID = rec.lastBlockUUID
         this.proof = rec.proof
         this.timestamp = rec.timestamp
+        this.waitTime = rec.waitTime
     }
 
     /** Returns true if this is the genesis block. */
@@ -75,6 +85,7 @@ export class Block implements BlockResourceItem {
             lastBlockUUID: this.lastBlockUUID,
             proof: this.proof,
             timestamp: this.timestamp,
+            waitTime: this.waitTime,
         }
     }
 
@@ -82,6 +93,7 @@ export class Block implements BlockResourceItem {
     toString() {
         return [
             this.uuid,
+            this.waitTime,
             JSON.stringify(this.transactions || [], undefined, 0),
             this.lastBlockHash,
             this.lastBlockUUID,
@@ -114,6 +126,17 @@ export class Blockchain extends Unit {
     protected readonly config!: Config
 
     /**
+     * Block transactions that will be attempted as part of this host's
+     * next block submission.
+     * @protected
+     */
+    protected pendingTransactions: BlockTransaction[] = []
+
+    protected pendingSubmit?: Block
+
+    protected isSubmitting: boolean = false
+
+    /**
      * Returns true if the given host is registered as a peer.
      * @param host
      */
@@ -126,8 +149,23 @@ export class Blockchain extends Unit {
      * Get a list of all registered peers.
      */
     public async getPeers(): Promise<Peer[]> {
-        const data = await this.firebase.ref('peers').once('value')
-        return (data.val() as Peer[]) || []
+        return PeerResource.collect().all()
+    }
+
+    /**
+     * From a peer, fetch the submission blockchain, if it is valid.
+     * @param peer
+     */
+    public async getPeerSubmit(peer: Peer): Promise<Block[] | undefined> {
+        try {
+            const result = await axios.get(peer.host)
+            const blocks: unknown = result.data?.data?.records
+            if ( Array.isArray(blocks) && blocks.every(isBlockResourceItem) ) {
+                return blocks.map(x => new Block(x))
+            }
+        } catch (e) {
+            return undefined
+        }
     }
 
     /**
@@ -136,7 +174,14 @@ export class Blockchain extends Unit {
      */
     public async registerPeer(peer: Peer) {
         if (!(await this.hasPeer(peer.host))) {
-            await this.firebase.ref('peers').push().set(peer)
+            await (<PeerResource> this.make(PeerResource)).push({
+                firebaseID: '',
+                seqID: -1,
+                name: peer.name,
+                host: peer.host,
+            })
+
+            this.refresh()
         }
     }
 
@@ -164,8 +209,6 @@ export class Blockchain extends Unit {
                     return false;
                 }
 
-
-
                 const pass = (
                     block.lastBlockUUID === previous.uuid
                     && block.lastBlockHash === previous.hash()
@@ -187,7 +230,88 @@ export class Blockchain extends Unit {
     }
 
     public async refresh() {
+        if ( this.isSubmitting ) {
+            return
+        } else {
+            this.isSubmitting = true
+        }
 
+        const validSeqID = (await this.read()).reverse()[0]?.seqID
+
+        const peers = await this.getPeers()
+        const time_x_block: {[key: string]: Block} = {}
+        const time_x_peer: {[key: string]: Peer | true} = {}
+
+        for ( const peer of peers ) {
+            const blocks: Block[] | undefined = await this.getPeerSubmit(peer)
+            if ( blocks && await this.validate(blocks) ) {
+                const block = blocks.reverse()[0]
+                if ( !block || block.seqID === validSeqID || !block.seqID ) continue
+
+                time_x_block[block.waitTime] = block
+                time_x_peer[block.waitTime] = peer
+            }
+        }
+
+        if ( this.pendingTransactions.length && !this.pendingSubmit ) {
+            await this.attemptSubmit()
+        }
+
+        if ( this.pendingSubmit ) {
+            time_x_block[this.pendingSubmit.waitTime] = this.pendingSubmit
+            time_x_peer[this.pendingSubmit.waitTime] = true
+        }
+
+        const min = Math.min(...Object.keys(time_x_block).map(parseFloat))
+        const block = time_x_block[min]
+        const peer = time_x_peer[min]
+
+        await (<BlockResource>this.app().make(BlockResource)).push(block)
+        if ( peer === true ) {
+            this.pendingSubmit = undefined
+            this.pendingTransactions = []
+        } else {
+            this.pendingSubmit = undefined
+            await this.attemptSubmit()
+        }
+
+        this.isSubmitting = false
+    }
+
+    public async getSubmitChain(): Promise<BlockResourceItem[]> {
+        const blocks = await this.read()
+        const submit = await this.attemptSubmit()
+        if ( submit ) {
+            submit.seqID = blocks.length > 0 ? collect<BlockResourceItem>(blocks).max('seqID') + 1 : 0
+            blocks.push(submit.toItem())
+        }
+
+        return blocks
+    }
+
+    public async attemptSubmit() {
+        if ( !this.pendingSubmit && this.pendingTransactions.length ) {
+            const lastBlock = await this.getLastBlock()
+            const waitTime = this.random(3000, 5000)
+            const proof = await this.generateProofOfWork(lastBlock, waitTime)
+
+            const block: BlockResourceItem = {
+                timestamp: (new Date).getTime(),
+                uuid: uuid_v4(),
+                transactions: this.pendingTransactions,
+                lastBlockHash: lastBlock!.hash(),
+                lastBlockUUID: lastBlock!.uuid,
+                proof,
+                waitTime,
+
+                firebaseID: '',
+                seqID: -1,
+            }
+
+            this.pendingSubmit = new Block(block)
+        }
+
+        return this.pendingSubmit
     }
 
     /**
@@ -195,7 +319,16 @@ export class Blockchain extends Unit {
      * @param group
      */
     public async submitTransactions(group: [TransactionResourceItem, TransactionResourceItem]) {
-        const lastBlock = await this.getLastBlock()
+        const txes = group.map(item => this.getEncounterTransaction(item))
+
+        if ( this.pendingSubmit ) {
+            this.pendingSubmit.transactions.push(...txes)
+        }
+
+        this.pendingTransactions.push(...txes)
+        this.refresh()
+
+        /*const lastBlock = await this.getLastBlock()
 
         this.logging.verbose('Last block:')
         this.logging.verbose(lastBlock)
@@ -213,7 +346,7 @@ export class Blockchain extends Unit {
         }
 
         await (<BlockResource>this.app().make(BlockResource)).push(block)
-        return new Block(block)
+        return new Block(block)*/
     }
 
     /**
@@ -221,7 +354,14 @@ export class Blockchain extends Unit {
      * @param exposures
      */
     public async submitExposures(...exposures: ExposureResourceItem[]) {
-        const lastBlock = await this.getLastBlock()
+        if ( this.pendingSubmit ) {
+            this.pendingSubmit.transactions.push(...exposures)
+        }
+
+        this.pendingTransactions.push(...exposures)
+        this.refresh()
+
+        /*const lastBlock = await this.getLastBlock()
 
         this.logging.verbose('Last block:')
         this.logging.verbose(lastBlock)
@@ -239,7 +379,7 @@ export class Blockchain extends Unit {
         }
 
         await (<BlockResource>this.app().make(BlockResource)).push(block)
-        return new Block(block)
+        return new Block(block)*/
     }
 
     /**
@@ -263,6 +403,7 @@ export class Blockchain extends Unit {
             })),
             firebaseID: '',
             seqID: -1,
+            waitTime: 0,
         })
     }
 
@@ -301,12 +442,15 @@ export class Blockchain extends Unit {
     /**
      * Generate a proof of work string for the block that follows lastBlock.
      * @param lastBlock
+     * @param waitTime
      * @protected
      */
-    protected async generateProofOfWork(lastBlock: Block): Promise<string> {
+    protected async generateProofOfWork(lastBlock: Block, waitTime: number): Promise<string> {
         const hashString = lastBlock.hash()
         const privateKey = this.config.get("app.gpg.key.private")
         const message = openpgp.Message.fromText(hashString)
+
+        await this.sleep(waitTime)
 
         // Sign the hash using the server's private key
         return (await openpgp.sign({
@@ -337,5 +481,21 @@ export class Blockchain extends Unit {
         })
 
         return !!(await result.signatures?.[0]?.verified)
+    }
+
+    /** Sleep for (roughly) the given number of milliseconds. */
+    async sleep(ms: number) {
+        await new Promise<void>(res => {
+            setTimeout(res, ms)
+        })
+    }
+
+    /**
+     * Get a random number between two values.
+     * @param min
+     * @param max
+     */
+    random(min: number, max: number): number {
+        return Math.floor(Math.random() * (Math.floor(max) - Math.ceil(min) + 1)) + Math.ceil(min);
     }
 }

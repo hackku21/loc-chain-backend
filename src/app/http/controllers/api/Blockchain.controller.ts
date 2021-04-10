@@ -34,6 +34,18 @@ export class Blockchain extends Controller {
     }
 
     /**
+     * Read the version of the blockchain held by this host, including the host's
+     * most recent submission, that has NOT been accepted yet.
+     */
+    public async readBlockchainSubmission() {
+        return many((await this.blockchain.getSubmitChain()).map(x => {
+            // @ts-ignore
+            delete x.firebaseID
+            return x
+        }))
+    }
+
+    /**
      * Determine whether the current blockchain is valid.
      */
     public async validate() {

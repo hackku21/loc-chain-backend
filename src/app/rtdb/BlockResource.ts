@@ -57,6 +57,23 @@ export interface BlockResourceItem extends FirebaseResourceItem {
     lastBlockUUID: string;  // the UUID of the previous block
     proof: string;  // the generated proof-of-work string
     timestamp: number;  // millisecond unix timestamp when this block was created
+    waitTime: number;  // number of milliseconds between last block and this one
+}
+
+/**
+ * Returns true if the given item is a valid BlockResourceItem.
+ * @param what
+ */
+export function isBlockResourceItem(what: any): what is BlockResourceItem {
+    return (
+        typeof what?.uuid === 'string'
+        && Array.isArray(what?.transactions)
+        && typeof what?.lastBlockHash === 'string'
+        && typeof what?.lastBlockUUID === 'string'
+        && typeof what?.proof === 'string'
+        && typeof what?.timestamp === 'number'
+        && typeof what?.waitTime === 'number'
+    )
 }
 
 /**
