@@ -10,6 +10,14 @@ export default {
                 .toString('utf-8')
         ),
 
-        defaultRTDB: env('FIREBASE_DEFAULT_RTDB', 'https://loc-chain-default-rtdb.firebaseio.com'),
+        api_auth_header: env('FIREBASE_API_AUTH_HEADER', 'X-Auth-Token'),
+
+        rtdb: {
+            default: env('FIREBASE_DEFAULT_RTDB', 'https://loc-chain-default-rtdb.firebaseio.com'),
+            refs: {
+                peers: 'chain/server/peers',
+                transaction: 'chain/pending/transactions',
+            },
+        },
     }
 }
