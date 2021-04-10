@@ -52,9 +52,17 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
         })
     }
 
-    protected resolveObject(snapshot: object | null | undefined) {
+    protected resolveObject(snapshot: any | null | undefined) {
         if ( !snapshot ) snapshot = {}
-        return Object.values(snapshot)
+
+        const returns: T[] = []
+        for ( const key in snapshot ) {
+            if ( !snapshot.hasOwnProperty(key) ) continue
+            snapshot[key].firebaseID = key
+            returns.push(snapshot[key])
+        }
+
+        return returns
     }
 
     clone(): Iterable<T> {
