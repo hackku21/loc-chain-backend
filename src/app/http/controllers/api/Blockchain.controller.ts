@@ -38,7 +38,8 @@ export class Blockchain extends Controller {
      * most recent submission, that has NOT been accepted yet.
      */
     public async readBlockchainSubmission() {
-        return many((await this.blockchain.getSubmitChain()).map(x => {
+        const resultOfPeerRefresh = !!this.request.query.resultOfPeerRefresh
+        return many((await this.blockchain.getSubmitChain(resultOfPeerRefresh)).map(x => {
             // @ts-ignore
             delete x.firebaseID
             return x

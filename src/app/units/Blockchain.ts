@@ -172,10 +172,11 @@ export class Blockchain extends Unit {
     /**
      * From a peer, fetch the submission blockchain, if it is valid.
      * @param peer
+     * @param resultOfPeerRefresh
      */
-    public async getPeerSubmit(peer: Peer): Promise<Block[] | undefined> {
+    public async getPeerSubmit(peer: Peer, resultOfPeerRefresh: boolean): Promise<Block[] | undefined> {
         try {
-            const result = await axios.get(`${peer.host}api/v1/chain/submit`)
+            const result = await axios.get(`${peer.host}api/v1/chain/submit${resultOfPeerRefresh ? '?resultOfPeerRefresh=true' : ''}`)
             const blocks: unknown = result.data?.data?.records
             if ( Array.isArray(blocks) && blocks.every(block => {
                 const match = isBlockResourceItem(block)
@@ -222,7 +223,7 @@ export class Blockchain extends Unit {
                     }
                 })
 
-                this.refresh()
+                this.refresh(false)
             } catch (e) {
                 this.logging.error(e)
             }
@@ -273,7 +274,7 @@ export class Blockchain extends Unit {
         ).every(Boolean)
     }
 
-    public async refresh() {
+    public async refresh(resultOfPeerRefresh: boolean) {
         if ( this.isSubmitting ) {
             return
         } else {
@@ -290,7 +291,7 @@ export class Blockchain extends Unit {
 
         for ( const peer of peers ) {
             console.log('[PEERS]', peers)
-            const blocks: Block[] | undefined = await this.getPeerSubmit(peer)
+            const blocks: Block[] | undefined = await this.getPeerSubmit(peer, resultOfPeerRefresh)
             console.log('[PEER BLOCKS]', blocks)
             if ( blocks && await this.validate(blocks) ) {
                 const block = blocks.reverse()[0]
@@ -351,7 +352,7 @@ export class Blockchain extends Unit {
         this.isSubmitting = false
     }
 
-    public async getSubmitChain(): Promise<BlockResourceItem[]> {
+    public async getSubmitChain(resultOfPeerRefresh: boolean): Promise<BlockResourceItem[]> {
         await this.firebase.trylock('block', 'Blockchain_getSubmitChain')
         const blocks = await this.read()
         const submit = await this.attemptSubmit()
@@ -361,7 +362,9 @@ export class Blockchain extends Unit {
         }
 
         await this.firebase.unlock('block')
-        // this.refresh()
+        if ( !resultOfPeerRefresh ) {
+            this.refresh(resultOfPeerRefresh)
+        }
         return blocks
     }
 
@@ -403,7 +406,7 @@ export class Blockchain extends Unit {
         }
 
         this.pendingTransactions.push(...txes)
-        this.refresh()
+        this.refresh(false)
 
         /*const lastBlock = await this.getLastBlock()
 
@@ -436,7 +439,7 @@ export class Blockchain extends Unit {
         }
 
         this.pendingTransactions.push(...exposures)
-        this.refresh()
+        this.refresh(false)
 
         /*const lastBlock = await this.getLastBlock()
 
