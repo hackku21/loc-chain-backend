@@ -179,7 +179,6 @@ export class Blockchain extends Unit {
             const blocks: unknown = result.data?.data?.records
             if ( Array.isArray(blocks) && blocks.every(block => {
                 const match = isBlockResourceItem(block)
-                console.log(match, block)
                 return match
             }) ) {
                 return blocks.map(x => new Block(x))
@@ -353,6 +352,7 @@ export class Blockchain extends Unit {
     }
 
     public async getSubmitChain(): Promise<BlockResourceItem[]> {
+        await this.firebase.trylock('block', 'Blockchain_getSubmitChain')
         const blocks = await this.read()
         const submit = await this.attemptSubmit()
         if ( submit ) {
@@ -360,6 +360,7 @@ export class Blockchain extends Unit {
             blocks.push(submit.toItem())
         }
 
+        await this.firebase.unlock('block')
         this.refresh()
         return blocks
     }

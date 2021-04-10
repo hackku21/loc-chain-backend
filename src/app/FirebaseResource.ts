@@ -71,7 +71,16 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
 
     findNextId(collection: FirebaseResourceItem[]) {
         if ( !collection.length ) return 0
-        return collect<FirebaseResourceItem>(collection).max<number>('seqID') + 1
+
+        let maxSeq = -1
+        for ( const item of collection ) {
+            if ( !item ) continue
+            if ( !isNaN(item.seqID) && item.seqID > maxSeq ) {
+                maxSeq = item.seqID
+            }
+        }
+
+        return maxSeq + 1
     }
 
     /**
@@ -81,6 +90,7 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
     async push(item: T): Promise<T> {
         await this.ref().transaction((collection) => {
             if ( !collection ) collection = []
+            if ( typeof collection === 'object' ) collection = Object.values(collection)
             item.seqID = this.findNextId(collection)
 
             // @ts-ignore
@@ -96,7 +106,6 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
                 .startAt(item.seqID)
                 .limitToFirst(1)
                 .on('value', snapshot => {
-                    console.log('got push ID back', snapshot.val(), snapshot.key)
                     res()
                 })
         })
