@@ -17,6 +17,7 @@ export default {
             refs: {
                 peers: 'chain/server/peers',
                 transaction: 'chain/pending/transactions',
+                block: 'chain/local/block',
             },
         },
     }

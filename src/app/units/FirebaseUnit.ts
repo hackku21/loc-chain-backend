@@ -2,7 +2,7 @@ import {Singleton, Inject} from "@extollo/di"
 import {Unit, Logging, Config} from "@extollo/lib"
 import * as firebase from "firebase-admin"
 
-export type RTDBRef = 'peers' | 'transaction'
+export type RTDBRef = 'peers' | 'transaction' | 'block'
 
 /**
  * FirebaseUnit Unit
