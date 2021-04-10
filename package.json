@@ -8,9 +8,9 @@
     "lib": "lib"
   },
   "dependencies": {
-    "@extollo/cli": "^0.4.4",
+    "@extollo/cli": "^0.4.5",
     "@extollo/di": "^0.4.5",
-    "@extollo/lib": "^0.1.4",
+    "@extollo/lib": "^0.1.5",
     "@extollo/util": "^0.3.3",
     "bcrypt": "^5.0.1",
     "copyfiles": "^2.4.1",

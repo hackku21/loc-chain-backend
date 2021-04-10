@@ -1,7 +1,7 @@
 dependencies:
-  '@extollo/cli': 0.4.4
+  '@extollo/cli': 0.4.5
   '@extollo/di': 0.4.5
-  '@extollo/lib': 0.1.4
+  '@extollo/lib': 0.1.5
   '@extollo/util': 0.3.3
   bcrypt: 5.0.1
   copyfiles: 2.4.1
@@ -29,17 +29,17 @@ packages:
     dev: false
     resolution:
       integrity: sha512-A2aa3QTkWoyqsZZFl56MLUsfmh7O0gN41IPvXAE/++8ojpbz12SszD7JEGYVdn4f9Kt4amIei07swF1h4AqmmQ==
-  /@extollo/cli/0.4.4:
+  /@extollo/cli/0.4.5:
     dependencies:
       '@extollo/di': 0.4.5
-      '@extollo/lib': 0.1.4
+      '@extollo/lib': 0.1.5
       '@extollo/util': 0.3.3
       '@types/node': 14.14.37
       colors: 1.4.0
       typescript: 4.2.4
     dev: false
     resolution:
-      integrity: sha512-cv7/D83YjKxiPH5eeSs7Kashza+Pc7EtVhzTrMSUoNHXAc/4UvaJbwbyhthFtR4FGQKeaqLz0DyN3gZCu5AiKw==
+      integrity: sha512-BzQ8rs+ByC7+Cyp1HvGQMfipmcW5xg/b3IaWPHpeAmgZYXbkaco+4nnveB6sqSH3etFgLuJfqNxX97+rs5SZNg==
   /@extollo/di/0.4.5:
     dependencies:
       '@extollo/util': 0.3.3
@@ -49,7 +49,7 @@ packages:
     dev: false
     resolution:
       integrity: sha512-PDYzYtFesHgdyhQKmAw1z+U13QLBOFgmrvjZgFls1Em+/P11PKWE43Ar3qXSLSIgPhrXU7grYdSyU8EGLBsekw==
-  /@extollo/lib/0.1.4:
+  /@extollo/lib/0.1.5:
     dependencies:
       '@extollo/di': 0.4.5
       '@extollo/util': 0.3.3
@@ -66,7 +66,7 @@ packages:
       typescript: 4.2.4
     dev: false
     resolution:
-      integrity: sha512-q+koxqgTblWokgmZNK5dK9k9/qj3Imad5gGRNr4zpX9VzXY7xryYuwUaG5JGJ1kfvoSiNEVZaXHBsq9pngek+w==
+      integrity: sha512-6Do5z2EpDcZ7s7/P5+pHEvFpPFHFpUL5i65N7BFOKyxCILZkgLHJxiEYGt7c92WSdlyWA32qJ/FmGBRqNRrGxQ==
   /@extollo/util/0.3.3:
     dependencies:
       '@types/mkdirp': 1.0.1
@@ -215,7 +215,7 @@ packages:
       integrity: sha512-g++NTmpmwbZZEnBhJi3y1D3YyZ2Y+1xL5blp96eeJhffginMym5tRw/AGNZblDI35U2K1FTJEYqIZ31tbEzs8w==
   /@grpc/grpc-js/1.2.12:
     dependencies:
-      '@types/node': 13.13.48
+      '@types/node': 14.14.37
       google-auth-library: 6.1.6
       semver: 6.3.0
     dev: false
@@ -2024,9 +2024,9 @@ packages:
     resolution:
       integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==
 specifiers:
-  '@extollo/cli': ^0.4.4
+  '@extollo/cli': ^0.4.5
   '@extollo/di': ^0.4.5
-  '@extollo/lib': ^0.1.4
+  '@extollo/lib': ^0.1.5
   '@extollo/util': ^0.3.3
   bcrypt: ^5.0.1
   copyfiles: ^2.4.1
