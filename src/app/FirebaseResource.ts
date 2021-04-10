@@ -5,7 +5,8 @@ import * as firebase from "firebase-admin"
 import {Application} from "@extollo/lib";
 
 export interface FirebaseResourceItem {
-    seqID: number
+    firebaseID: string;
+    seqID: number;
 }
 
 @Injectable()
