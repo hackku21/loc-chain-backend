@@ -58,12 +58,12 @@ export class FirebaseUnit extends Unit {
                     return Promise.resolve()
                 }
 
-                this.logging.debug(`Unable to acquire lock: ${name}. Trying again soon...`)
+                this.logging.debug(`Unable to acquire lock: ${name} - ${description}. Trying again soon...`)
                 await this.sleep(500)
                 return this.trylock(name, description)
             })
             .catch(async reason => {
-                this.logging.debug(`Unable to acquire lock: ${name}. Trying again soon...`)
+                this.logging.debug(`Unable to acquire lock: ${name} - ${description}. Trying again soon...`)
                 await this.sleep(500)
                 return this.trylock(name, description)
             })
