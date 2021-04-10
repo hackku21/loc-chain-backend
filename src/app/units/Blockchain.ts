@@ -44,15 +44,17 @@ export class Block implements BlockResourceItem {
         }
         const proof = this.proof
         const publicKey = this.config.get("app.gpg.key.public")
-        const message = openpgp.Message.fromText(proof)
 
-        // Verify the signature
-        const verified = await (await openpgp.verify({
-            message,
-            publicKeys: publicKey
-        })).signatures[0].verified
+        const result = await openpgp.verify({
+            publicKeys: await openpgp.readKey({
+                armoredKey: publicKey,
+            }),
+            message: await openpgp.readMessage({
+                armoredMessage: proof,
+            }),
+        })
 
-        return !!verified
+        return !!(await result.signatures?.[0]?.verified)
     }
 
     /** Generate the hash for this block. */
@@ -80,7 +82,7 @@ export class Block implements BlockResourceItem {
     toString() {
         return [
             this.uuid,
-            JSON.stringify(this.transactions),
+            JSON.stringify(this.transactions || [], undefined, 0),
             this.lastBlockHash,
             this.lastBlockUUID,
         ].join('%')
@@ -145,7 +147,43 @@ export class Blockchain extends Unit {
      */
     public async validate(chain: Block[]) {
         const blocks = collect<Block>(chain)
-        return (await blocks.promiseMap((block: Block) => block.isGenesis())).every(Boolean)
+        return (
+            await blocks.promiseMap(async (block, idx) => {
+                if ( await block.isGenesis() ) {
+                    return true
+                }
+
+                const previous: Block | undefined = blocks.at(idx - 1)
+                if ( !previous ) {
+                    this.logging.debug(`Chain is invalid: block ${idx} is missing previous ${idx - 1}.`)
+                    return false;
+                }
+
+                if ( !(await this.validateProofOfWork(block, previous)) ) {
+                    this.logging.debug(`Chain is invalid: block ${idx} failed proof of work validation`)
+                    return false;
+                }
+
+
+
+                const pass = (
+                    block.lastBlockUUID === previous.uuid
+                    && block.lastBlockHash === previous.hash()
+                )
+
+                if ( !pass ) {
+                    this.logging.debug(`Chain is invalid: block ${idx} does not match previous.`)
+                    this.logging.debug({
+                        lastBlockUUID: block.lastBlockUUID,
+                        computedLastUUID: previous.uuid,
+                        lastBlockHash: block.lastBlockHash,
+                        computedLastHash: previous.hash(),
+                    })
+                }
+
+                return pass
+            })
+        ).every(Boolean)
     }
 
     public async refresh() {
@@ -276,7 +314,7 @@ export class Blockchain extends Unit {
             privateKeys: await openpgp.readKey({
                 armoredKey: privateKey,
             })
-        })).toString()
+        }))
     }
 
     /**
@@ -288,14 +326,16 @@ export class Blockchain extends Unit {
     protected async validateProofOfWork(currentBlock: Block, lastBlock: Block): Promise<boolean> {
         const proof = lastBlock.proof
         const publicKey = this.config.get("app.gpg.key.public")
-        const message = openpgp.Message.fromText(proof)
 
-        // Verify the signature
-        const verified = await (await openpgp.verify({
-            message,
-            publicKeys: publicKey
-        })).signatures[0].verified
+        const result = await openpgp.verify({
+            publicKeys: await openpgp.readKey({
+                armoredKey: publicKey,
+            }),
+            message: await openpgp.readMessage({
+                armoredMessage: proof,
+            }),
+        })
 
-        return !!verified
+        return !!(await result.signatures?.[0]?.verified)
     }
 }

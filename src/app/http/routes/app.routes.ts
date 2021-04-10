@@ -9,5 +9,8 @@ Route.group('/api/v1', () => {
         .pre('DebugOnly')
         .pre('api:ValidateExposureTransaction')
 
+    Route.post('/validate', 'api:Blockchain.validate')
+        .pre('DebugOnly')
+
     Route.get('/chain', 'api:Blockchain.readBlockchain')
 })

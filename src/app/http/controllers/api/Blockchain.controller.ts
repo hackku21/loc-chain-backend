@@ -2,7 +2,7 @@ import {Controller} from "@extollo/lib"
 import {Injectable, Inject} from "@extollo/di"
 import {TransactionResource, TransactionResourceItem} from "../../../rtdb/TransactionResource"
 import {many, one} from "@extollo/util"
-import {Blockchain as BlockchainService} from "../../../units/Blockchain"
+import {Block, Blockchain as BlockchainService} from "../../../units/Blockchain"
 import {ExposureResource, ExposureResourceItem} from "../../../rtdb/ExposureResource";
 
 /**
@@ -24,6 +24,13 @@ export class Blockchain extends Controller {
             delete x.firebaseID
             return x
         }))
+    }
+
+    public async validate() {
+        const blocks = (await this.blockchain.read()).map(x => new Block(x))
+        return {
+            is_valid: await this.blockchain.validate(blocks)
+        }
     }
 
     /**
