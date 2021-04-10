@@ -10,11 +10,11 @@
   "dependencies": {
     "@extollo/cli": "^0.4.1",
     "@extollo/di": "^0.4.2",
-    "@extollo/i18n": "^0.1.1",
     "@extollo/lib": "^0.1.2",
     "@extollo/orm": "^0.1.1",
     "@extollo/util": "^0.3.1",
     "copyfiles": "^2.4.1",
+    "firebase-admin": "^9.6.0",
     "typescript": "^4.1.3"
   },
   "scripts": {
