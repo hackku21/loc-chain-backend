@@ -1,7 +1,7 @@
 import {Singleton, Inject} from "@extollo/di"
 import {Unit, Logging, Config} from "@extollo/lib"
 import {FirebaseUnit} from "./FirebaseUnit"
-import {BlockResource, BlockResourceItem, BlockTransaction} from "../rtdb/BlockResource"
+import {BlockEncounterTransaction, BlockResource, BlockResourceItem, BlockTransaction} from "../rtdb/BlockResource"
 import {TransactionResourceItem} from "../rtdb/TransactionResource"
 import * as openpgp from "openpgp"
 import * as crypto from "crypto"
@@ -11,9 +11,6 @@ export class Block implements BlockResourceItem {
     firebaseID: string;
     seqID: number;
     uuid: string;
-    combinedHash: string;
-    timestamp: number;
-    encodedGPSLocation: string;
     transactions: BlockTransaction[];
     lastBlockHash: string;
     lastBlockUUID: string;
@@ -23,9 +20,6 @@ export class Block implements BlockResourceItem {
         this.firebaseID = rec.firebaseID;
         this.seqID = rec.seqID
         this.uuid = rec.uuid
-        this.combinedHash = rec.combinedHash
-        this.timestamp = rec.timestamp
-        this.encodedGPSLocation = rec.encodedGPSLocation
         this.transactions = rec.transactions
         this.lastBlockHash = rec.lastBlockHash
         this.lastBlockUUID = rec.lastBlockUUID
@@ -38,12 +32,21 @@ export class Block implements BlockResourceItem {
             .digest('hex')
     }
 
+    toItem(): BlockResourceItem {
+        return {
+            seqID: this.seqID,
+            firebaseID: this.firebaseID,
+            uuid: this.uuid,
+            transactions: this.transactions,
+            lastBlockHash: this.lastBlockHash,
+            lastBlockUUID: this.lastBlockUUID,
+            proof: this.proof,
+        }
+    }
+
     toString() {
         return [
             this.uuid,
-            this.combinedHash,
-            this.timestamp.toString(),
-            this.encodedGPSLocation,
             JSON.stringify(this.transactions),
             this.lastBlockHash,
             this.lastBlockUUID,
@@ -72,22 +75,38 @@ export class Blockchain extends Unit {
     @Inject()
     protected readonly config!: Config
 
+    /**
+     * Returns true if the given host is registered as a peer.
+     * @param host
+     */
     public async hasPeer(host: string): Promise<boolean> {
         const peers = await this.getPeers()
         return peers.some(peer => peer.host.toLowerCase() === host.toLowerCase())
     }
 
+    /**
+     * Get a list of all registered peers.
+     */
     public async getPeers(): Promise<Peer[]> {
         const data = await this.firebase.ref('peers').once('value')
         return (data.val() as Peer[]) || []
     }
 
+    /**
+     * Register a new host as a peer of this instance.
+     * @param peer
+     */
     public async registerPeer(peer: Peer) {
         if ( !(await this.hasPeer(peer.host)) ) {
             await this.firebase.ref('peers').push().set(peer)
         }
     }
 
+    /**
+     * Given an array of blocks in chain-order, validate the chain.
+     * @param chain
+     * @return boolean - true if the chain is valid
+     */
     public async validate(chain: Block[]) {
         const blocks = collect<Block>(chain)
         return blocks.every((block: Block, idx: number) => {
@@ -101,14 +120,35 @@ export class Blockchain extends Unit {
 
     }
 
-    public async submitBlock(block: BlockResourceItem, afterBlock: Block, proofToken: string) {
-        const newBlock = new Block(block)
-        newBlock.lastBlockHash = afterBlock.hash()
-        newBlock.lastBlockUUID = afterBlock.uuid
+    public async submitTransactions(group: [TransactionResourceItem, TransactionResourceItem]) {
+        let lastBlock = await this.getLastBlock()
+        if ( !lastBlock ) await this.getGenesisBlock()
+
+        const block: BlockResourceItem = {
+            uuid: uuid_v4(),
+            transactions: group.map(item => this.getEncounterTransaction(item)),
+            lastBlockHash: lastBlock!.hash(),
+            lastBlockUUID: lastBlock!.uuid,
+            proof: await this.generateProofOfWork(lastBlock!),
+
+            firebaseID: '',
+            seqID: -1,
+        }
+
+        await (<BlockResource> this.app().make(BlockResource)).push(block)
+        return new Block(block)
     }
 
-    public async submitTransactions(group: [TransactionResourceItem, TransactionResourceItem]) {
-        // Not sure yet
+    public async getGenesisBlock(): Promise<Block> {
+        return new Block({
+            uuid: '0000',
+            transactions: [],
+            lastBlockHash: '',
+            lastBlockUUID: '',
+            proof: '',
+            firebaseID: '',
+            seqID: -1,
+        })
     }
 
     public async getLastBlock(): Promise<Block | undefined> {
@@ -122,6 +162,14 @@ export class Blockchain extends Unit {
 
     public async down() {
 
+    }
+
+    protected getEncounterTransaction(item: TransactionResourceItem): BlockEncounterTransaction {
+        return {
+            combinedHash: item.combinedHash,
+            timestamp: item.timestamp,
+            encodedGPSLocation: item.encodedGPSLocation,
+        }
     }
 
     protected async generateProofOfWork(lastBlock: Block): Promise<string> {

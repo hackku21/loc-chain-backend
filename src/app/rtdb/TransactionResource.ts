@@ -3,6 +3,9 @@ import {Injectable} from "@extollo/di"
 import {RTDBRef} from "../units/FirebaseUnit"
 import {AsyncCollection} from "@extollo/util";
 
+/**
+ * Interface representing a client-submitted encounter transaction.
+ */
 export interface TransactionResourceItem extends FirebaseResourceItem {
     combinedHash: string;
     timestamp: number;

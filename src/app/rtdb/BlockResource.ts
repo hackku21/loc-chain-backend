@@ -3,17 +3,24 @@ import {Injectable} from "@extollo/di"
 import {RTDBRef} from "../units/FirebaseUnit"
 import {AsyncCollection} from "@extollo/util"
 
+/**
+ * A block transaction representing an encounter between two clients.
+ */
 export interface BlockEncounterTransaction {
     combinedHash: string;
     timestamp: number;
     encodedGPSLocation: string;
 }
 
+/**
+ * A block transaction representing an infected client.
+ */
 export interface BlockInfectionTransaction {
     clientID: string;
     timestamp: number;
 }
 
+/** Union type of all possible block transactions. */
 export type BlockTransaction = BlockInfectionTransaction | BlockEncounterTransaction
 
 export function isBlockEncounterTransaction(what: any): what is BlockEncounterTransaction {
@@ -37,11 +44,11 @@ export function isBlockTransaction(what: any): what is BlockTransaction {
     return isBlockEncounterTransaction(what) || isBlockInfectionTransaction(what)
 }
 
+/**
+ * Interface representing a single block in the chain.
+ */
 export interface BlockResourceItem extends FirebaseResourceItem {
     uuid: string;
-    combinedHash: string;
-    timestamp: number;
-    encodedGPSLocation: string;
     transactions: BlockTransaction[];
     lastBlockHash: string;
     lastBlockUUID: string;

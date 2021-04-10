@@ -4,6 +4,9 @@ import {FirebaseUnit, RTDBRef} from "./units/FirebaseUnit"
 import * as firebase from "firebase-admin"
 import {Application} from "@extollo/lib";
 
+/**
+ * Base interface for an item in a Firebase RTDB collection.
+ */
 export interface FirebaseResourceItem {
     firebaseID: string;
     seqID: number;
@@ -17,15 +20,17 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
         return Application.getApplication().make<FirebaseUnit>(FirebaseUnit).ref(this.refName)
     }
 
+    /** Get the next sequential ID. */
     async getNextID(): Promise<number> {
         return new Promise<number>((res, rej) => {
             this.ref().orderByChild('seqID')
                 .on('value', snapshot => {
-                    res(this.resolveObject(snapshot.val()).reverse()?.[0]?.seqID || 1)
+                    res((this.resolveObject(snapshot.val()).reverse()?.[0]?.seqID || 0) + 1)
                 }, rej)
         })
     }
 
+    /** Get the record at the ith index. */
     async at(i: number): Promise<T | undefined> {
         return new Promise<T | undefined>((res, rej) => {
             this.ref().orderByChild('seqID')
@@ -34,6 +39,7 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
         })
     }
 
+    /** Fetch an array of records in a range. */
     async range(start: number, end: number): Promise<Collection<T>> {
         return new Promise<Collection<T>>((res, rej) => {
             this.ref().orderByChild('seqID')
@@ -44,6 +50,7 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
         })
     }
 
+    /** Count the items in the collection. */
     async count(): Promise<number> {
         return new Promise<number>((res, rej) => {
             this.ref().orderByChild('seqID')
@@ -53,6 +60,21 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
         })
     }
 
+    /**
+     * Push a new item into the collection.
+     * @param item
+     */
+    async push(item: T): Promise<T> {
+        item.seqID = await this.getNextID()
+        await this.ref().push(item)
+        return item
+    }
+
+    /**
+     * Given the value of a realtime-database snapshot, resolve it to an array of T.
+     * @param snapshot
+     * @protected
+     */
     protected resolveObject(snapshot: any | null | undefined) {
         if ( !snapshot ) snapshot = {}
 
