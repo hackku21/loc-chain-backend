@@ -31,9 +31,11 @@ export default {
             // Mapping of ref-shortname to actual database reference
             // If you add a value here, also add it to the RTDBRef type alias
             refs: {
-                peers: 'chain/server/peers',
-                transaction: 'chain/pending/transactions',
-                block: 'chain/local/block',
+                locks: 'server/locks',  // Mutex-style locks for database refs
+                peers: 'server/peers',  // Collection of federated peers
+                transaction: 'chain/pending/transactions',  // List of pending encounter transactions
+                exposure: 'chain/pending/exposures',  // List of pending exposure notifications
+                block: 'chain/block',  // The blockchain itself
             },
         },
     }

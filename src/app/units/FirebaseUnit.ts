@@ -2,7 +2,7 @@ import { Singleton, Inject } from "@extollo/di"
 import { Unit, Logging, Config } from "@extollo/lib"
 import * as firebase from "firebase-admin"
 
-export type RTDBRef = 'peers' | 'transaction' | 'block'
+export type RTDBRef = 'peers' | 'transaction' | 'block' | 'exposure' | 'locks'
 
 /**
  * FirebaseUnit Unit
@@ -19,14 +19,64 @@ export class FirebaseUnit extends Unit {
     @Inject()
     protected readonly config!: Config
 
+    /** Get the underlying Firebase library. */
     get() {
         return this._firebase
     }
 
+    /** Get a realtime-database Reference using our internal aliases. */
     ref(name: RTDBRef): firebase.database.Reference {
         return this._firebase.database().ref(
             String(this.config.get(`app.firebase.rtdb.refs.${name}`))
         )
+    }
+
+    /** Get the realtime database object directly. */
+    db(): firebase.database.Database {
+        return this._firebase.database()
+    }
+
+    /**
+     * Try to lock the given database ref alias.
+     * Promise will sleep if lock is held, and will resolve once lock is acquired.
+     * @param name
+     */
+    async trylock(name: RTDBRef): Promise<any> {
+        return this._firebase.database()
+            .ref(`${this.config.get('app.firebase.rtdb.refs.locks')}/${name}`)
+            .transaction(current => {
+                if ( !current || current.time < 1 ) {
+                    return {
+                        time: (new Date).getTime(),
+                    }
+                }
+            }, undefined, false).then(async result => {
+                if ( result.committed ) {
+                    this.logging.debug(`Lock acquired: ${name}`)
+                    return Promise.resolve()
+                }
+
+                this.logging.debug(`Unable to acquire lock: ${name}. Trying again soon...`)
+                await this.sleep(500)
+                return this.trylock(name)
+            })
+            .catch(async reason => {
+                this.logging.debug(`Unable to acquire lock: ${name}. Trying again soon...`)
+                await this.sleep(500)
+                return this.trylock(name)
+            })
+    }
+
+    /**
+     * Release the lock on the given database ref.
+     * @param name
+     */
+    async unlock(name: RTDBRef) {
+        await this._firebase.database()
+            .ref(`${this.config.get('app.firebase.rtdb.refs.locks')}/${name}`)
+            .set({time: 0}, err => {
+                if ( err ) this.logging.error(err)
+            })
     }
 
     /** Called on app start. */
@@ -41,5 +91,12 @@ export class FirebaseUnit extends Unit {
     /** Called on app shutdown. */
     public async down() {
 
+    }
+
+    /** Sleep for (roughly) the given number of milliseconds. */
+    async sleep(ms: number) {
+        await new Promise<void>(res => {
+            setTimeout(res, ms)
+        })
     }
 }
