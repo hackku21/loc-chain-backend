@@ -81,7 +81,7 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
 
             // @ts-ignore
             delete item.firebaseID
-            collection.push(item)
+            collection.push(this.filter(item))
 
             return collection
         })
@@ -122,5 +122,23 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
         const inst = new FirebaseResource<T>()
         inst.refName = this.refName
         return inst
+    }
+
+    filter(obj: {[key: string]: any}) {
+        for (let key in obj) {
+            if (obj[key] === undefined) {
+                delete obj[key]
+                continue
+            }
+
+            if (obj[key] && typeof obj[key] === "object") {
+                this.filter(obj[key])
+                if (!Object.keys(obj[key]).length) {
+                    delete obj[key]
+                }
+            }
+        }
+
+        return obj
     }
 }

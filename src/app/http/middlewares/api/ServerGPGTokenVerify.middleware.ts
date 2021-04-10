@@ -22,11 +22,11 @@ export class ServerGPGTokenVerify extends Middleware {
         }
         // if single string
         if (typeof(value) === 'string') {
-            this.verifyToken(value)
+            this.verifyToken(Buffer.from(value, 'base64').toString('utf-8'))
             return
         } else { // else an array of strings
             for (const item of value) {
-                if (await this.verifyToken(item)) {
+                if (await this.verifyToken(Buffer.from(item, 'base64').toString('utf-8'))) {
                     return
                 }
             }

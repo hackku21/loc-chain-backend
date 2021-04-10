@@ -144,6 +144,15 @@ export class Blockchain extends Unit {
 
     protected isSubmitting: boolean = false
 
+    async up() {
+        const peers = this.config.get('server.peers')
+        for ( const peer of peers ) {
+            await this.registerPeer({
+                host: peer,
+            })
+        }
+    }
+
     /**
      * Returns true if the given host is registered as a peer.
      * @param host
@@ -166,7 +175,7 @@ export class Blockchain extends Unit {
      */
     public async getPeerSubmit(peer: Peer): Promise<Block[] | undefined> {
         try {
-            const result = await axios.get(peer.host)
+            const result = await axios.get(`${peer.host}api/v1/chain/submit`)
             const blocks: unknown = result.data?.data?.records
             if ( Array.isArray(blocks) && blocks.every(isBlockResourceItem) ) {
                 return blocks.map(x => new Block(x))
@@ -182,6 +191,7 @@ export class Blockchain extends Unit {
      */
     public async registerPeer(peer: Peer) {
         if (!(await this.hasPeer(peer.host))) {
+            this.logging.info(`Registering peer: ${peer.host}`)
             await (<PeerResource> this.make(PeerResource)).push({
                 firebaseID: '',
                 seqID: -1,
@@ -189,7 +199,28 @@ export class Blockchain extends Unit {
                 host: peer.host,
             })
 
-            this.refresh()
+            const header = this.config.get('app.api_server_header')
+
+            try {
+                console.log('return peering', [`${peer.host}api/v1/peer`, {
+                    host: this.getBaseURL(),
+                }, {
+                    headers: {
+                        [header]: await this.getPeerToken(),
+                    }
+                }])
+                await axios.post(`${peer.host}api/v1/peer`, {
+                    host: this.getBaseURL(),
+                }, {
+                    headers: {
+                        [header]: await this.getPeerToken(),
+                    }
+                })
+
+                this.refresh()
+            } catch (e) {
+                this.logging.error(e)
+            }
         }
     }
 
@@ -289,7 +320,7 @@ export class Blockchain extends Unit {
             await (<BlockResource>this.app().make(BlockResource)).push(block)
         } else {
             await this.firebase.ref('block').transaction((_) => {
-                return time_x_blocks[min].map(x => x.toItem())
+                return (time_x_blocks[min] || []).map(x => x.toItem())
             })
 
             this.pendingSubmit = undefined
@@ -307,6 +338,7 @@ export class Blockchain extends Unit {
             blocks.push(submit.toItem())
         }
 
+        this.refresh()
         return blocks
     }
 
@@ -402,6 +434,18 @@ export class Blockchain extends Unit {
 
         await (<BlockResource>this.app().make(BlockResource)).push(block)
         return new Block(block)*/
+    }
+
+    public async getPeerToken() {
+        const message = openpgp.Message.fromText("0000")
+        const privateKey = this.config.get("app.gpg.key.private")
+
+        return Buffer.from((await openpgp.sign({
+            message,
+            privateKeys: await openpgp.readKey({
+                armoredKey: privateKey
+            }),
+        })), 'utf-8').toString('base64')
     }
 
     /**
@@ -513,7 +557,7 @@ export class Blockchain extends Unit {
      */
     protected getBaseURL(): string {
         const base = this.config.get('server.base_url')
-        return `${base}${base.endsWith('/') ? '' : '/'}api/v1/chain/submit`
+        return `${base}${base.endsWith('/') ? '' : '/'}`
     }
 
     /** Sleep for (roughly) the given number of milliseconds. */
