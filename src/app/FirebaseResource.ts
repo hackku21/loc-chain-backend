@@ -2,7 +2,7 @@ import {Inject, Injectable} from "@extollo/di"
 import {Collection, Iterable} from "@extollo/util"
 import {FirebaseUnit, RTDBRef} from "./units/FirebaseUnit"
 import * as firebase from "firebase-admin"
-import {Application} from "@extollo/lib";
+import {Application} from "@extollo/lib"
 
 /**
  * Base interface for an item in a Firebase RTDB collection.

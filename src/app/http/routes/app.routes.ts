@@ -1,3 +1,6 @@
 import {Route} from "@extollo/lib"
 
-Route.get('/', 'main:Home.welcome')
+Route.group('/api/v1', () => {
+    Route.post('/encounter', 'api:Blockchain.postTransaction')
+        .pre('api:ValidateEncounterTransaction')
+})

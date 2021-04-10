@@ -1,7 +1,7 @@
 import {FirebaseResource, FirebaseResourceItem} from "../FirebaseResource"
 import {Injectable} from "@extollo/di"
 import {RTDBRef} from "../units/FirebaseUnit"
-import {AsyncCollection} from "@extollo/util";
+import {AsyncCollection} from "@extollo/util"
 
 /**
  * Interface representing a client-submitted encounter transaction.
