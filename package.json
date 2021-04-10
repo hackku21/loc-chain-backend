@@ -1,0 +1,38 @@
+{
+  "name": "@extollo/extollo",
+  "version": "0.1.0",
+  "description": "The framework lifts up your code.",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "directories": {
+    "lib": "lib"
+  },
+  "dependencies": {
+    "@extollo/cli": "^0.4.1",
+    "@extollo/di": "^0.4.2",
+    "@extollo/i18n": "^0.1.1",
+    "@extollo/lib": "^0.1.2",
+    "@extollo/orm": "^0.1.1",
+    "@extollo/util": "^0.3.1",
+    "copyfiles": "^2.4.1",
+    "typescript": "^4.1.3"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rm -rf lib && mkdir -p lib && cp .env lib/.env && tsc",
+    "postbuild": "copyfiles -u 1 src/app/resources/**/* lib",
+    "app": "pnpm run build && node lib/index.js",
+    "cli": "pnpm run build && node lib/cli.js"
+  },
+  "files": [
+    "lib/**/*"
+  ],
+  "prepare": "npm run build",
+  "postversion": "git push && git push --tags",
+  "repository": {
+    "type": "git",
+    "url": "https://code.garrettmills.dev/extollo/extollo"
+  },
+  "author": "garrettmills <shout@garrettmills.dev>",
+  "license": "MIT"
+}
