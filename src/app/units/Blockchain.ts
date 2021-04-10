@@ -1,11 +1,11 @@
-import {Singleton, Inject} from "@extollo/di"
-import {Unit, Logging, Config} from "@extollo/lib"
-import {FirebaseUnit} from "./FirebaseUnit"
-import {BlockEncounterTransaction, BlockResource, BlockResourceItem, BlockTransaction} from "../rtdb/BlockResource"
-import {TransactionResourceItem} from "../rtdb/TransactionResource"
+import { Singleton, Inject } from "@extollo/di"
+import { Unit, Logging, Config, Application } from "@extollo/lib"
+import { FirebaseUnit } from "./FirebaseUnit"
+import { BlockEncounterTransaction, BlockResource, BlockResourceItem, BlockTransaction } from "../rtdb/BlockResource"
+import { TransactionResourceItem } from "../rtdb/TransactionResource"
 import * as openpgp from "openpgp"
 import * as crypto from "crypto"
-import {collect, uuid_v4} from "@extollo/util"
+import { collect, uuid_v4 } from "@extollo/util"
 
 /**
  * Utility wrapper class for a block in the chain.
@@ -19,7 +19,9 @@ export class Block implements BlockResourceItem {
     lastBlockHash: string;
     lastBlockUUID: string;
     proof: string;
-
+    get config(): Config {
+        return Application.getApplication().make(Config)
+    }
     constructor(rec: BlockResourceItem) {
         this.firebaseID = rec.firebaseID;
         this.seqID = rec.seqID
@@ -32,9 +34,22 @@ export class Block implements BlockResourceItem {
     }
 
     /** Returns true if this is the genesis block. */
-    isGenesis() {
-        // FIXME sign this with GPG to verify that it came from here
-        return this.uuid === '0000'
+    async isGenesis() {
+        // first block will be guaranteed uuid 0000
+        if (this.uuid !== '0000') {
+            return false;
+        }
+        const proof = this.proof
+        const publicKey = this.config.get("app.gpg.key.public")
+        const message = openpgp.Message.fromText(proof)
+
+        // Verify the signature
+        const verified = await (await openpgp.verify({
+            message,
+            publicKeys: publicKey
+        })).signatures[0].verified
+
+        return !!verified
     }
 
     /** Generate the hash for this block. */
@@ -115,7 +130,7 @@ export class Blockchain extends Unit {
      * @param peer
      */
     public async registerPeer(peer: Peer) {
-        if ( !(await this.hasPeer(peer.host)) ) {
+        if (!(await this.hasPeer(peer.host))) {
             await this.firebase.ref('peers').push().set(peer)
         }
     }
@@ -127,10 +142,7 @@ export class Blockchain extends Unit {
      */
     public async validate(chain: Block[]) {
         const blocks = collect<Block>(chain)
-        return blocks.every((block: Block, idx: number) => {
-            if ( idx === 0 ) return block.isGenesis()
-            return block.lastBlockHash === blocks.at(idx)!.hash()
-        })
+        return (await blocks.promiseMap((block: Block) => block.isGenesis())).every(Boolean)
     }
 
     public async refresh() {
@@ -156,21 +168,26 @@ export class Blockchain extends Unit {
             seqID: -1,
         }
 
-        await (<BlockResource> this.app().make(BlockResource)).push(block)
+        await (<BlockResource>this.app().make(BlockResource)).push(block)
         return new Block(block)
     }
 
     /**
      * Instantiate the genesis block of the entire chain.
      */
-    public getGenesisBlock(): Block {
+    public async getGenesisBlock(): Promise<Block> {
+        const message = openpgp.Message.fromText("0000")
+        const privateKey = this.config.get("app.gpg.key.private")
         return new Block({
             timestamp: (new Date).getTime(),
             uuid: '0000',
             transactions: [],
             lastBlockHash: '',
             lastBlockUUID: '',
-            proof: '',
+            proof: (await openpgp.sign({
+                message,
+                privateKeys: privateKey
+            })).toString(),
             firebaseID: '',
             seqID: -1,
         })
@@ -181,10 +198,10 @@ export class Blockchain extends Unit {
      */
     public async getLastBlock(): Promise<Block> {
         const rec: BlockResourceItem | undefined = await BlockResource.collect().last()
-        if ( rec ) return new Block(rec)
+        if (rec) return new Block(rec)
 
-        const genesis = this.getGenesisBlock().toItem()
-        await (<BlockResource> this.app().make(BlockResource)).push(genesis)
+        const genesis = (await this.getGenesisBlock()).toItem()
+        await (<BlockResource>this.app().make(BlockResource)).push(genesis)
         return this.getLastBlock()
     }
 
@@ -234,7 +251,7 @@ export class Blockchain extends Unit {
             message,
             publicKeys: publicKey
         })).signatures[0].verified
-        
+
         return !!verified
     }
 }
