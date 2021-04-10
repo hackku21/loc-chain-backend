@@ -68,11 +68,11 @@ export interface BlockResourceItem extends FirebaseResourceItem {
 export function isBlockResourceItem(what: any): what is BlockResourceItem {
     return (
         typeof what?.uuid === 'string'
-        && Array.isArray(what?.transactions)
+        && (!what?.transactions || Array.isArray(what?.transactions))
         && typeof what?.lastBlockHash === 'string'
         && typeof what?.lastBlockUUID === 'string'
-        && typeof what?.proof === 'string'
-        && typeof what?.timestamp === 'number'
+        && typeof what?.proof
+        && typeof what?.timestamp
         && typeof what?.waitTime === 'number'
     )
 }

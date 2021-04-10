@@ -177,10 +177,15 @@ export class Blockchain extends Unit {
         try {
             const result = await axios.get(`${peer.host}api/v1/chain/submit`)
             const blocks: unknown = result.data?.data?.records
-            if ( Array.isArray(blocks) && blocks.every(isBlockResourceItem) ) {
+            if ( Array.isArray(blocks) && blocks.every(block => {
+                const match = isBlockResourceItem(block)
+                console.log(match, block)
+                return match
+            }) ) {
                 return blocks.map(x => new Block(x))
             }
         } catch (e) {
+            this.logging.error(e)
             return undefined
         }
     }
@@ -214,6 +219,7 @@ export class Blockchain extends Unit {
                 }, {
                     headers: {
                         [header]: await this.getPeerToken(),
+                        'content-type': 'application/json',
                     }
                 })
 
@@ -283,7 +289,9 @@ export class Blockchain extends Unit {
         const time_x_peer: {[key: string]: Peer | true} = {}
 
         for ( const peer of peers ) {
+            console.log('[PEERS]', peers)
             const blocks: Block[] | undefined = await this.getPeerSubmit(peer)
+            console.log('[PEER BLOCKS]', blocks)
             if ( blocks && await this.validate(blocks) ) {
                 const block = blocks.reverse()[0]
                 if ( !block || block.seqID === validSeqID || !block.seqID ) continue
@@ -296,8 +304,10 @@ export class Blockchain extends Unit {
                 block.waitTime += penalty
 
                 time_x_block[block.waitTime] = block
-                time_x_blocks[block.waitTime] = blocks
+                time_x_blocks[block.waitTime] = blocks.reverse()
                 time_x_peer[block.waitTime] = peer
+            } else {
+                console.log('VALIDATION FAIL')
             }
         }
 
@@ -320,7 +330,17 @@ export class Blockchain extends Unit {
             await (<BlockResource>this.app().make(BlockResource)).push(block)
         } else {
             await this.firebase.ref('block').transaction((_) => {
-                return (time_x_blocks[min] || []).map(x => x.toItem())
+                return (time_x_blocks[min] || []).map(x => {
+                    const item = x.toItem()
+                    // @ts-ignore
+                    delete item.firebaseID
+
+                    if ( !item.transactions ) {
+                        item.transactions = []
+                    }
+
+                    return item
+                })
             })
 
             this.pendingSubmit = undefined

@@ -7,7 +7,7 @@ export default {
     base_url: env('BASE_URL', 'http://localhost:8000/'),
 
     peers: [
-        // 'http://127.0.0.1:8100/',
+        'http://127.0.0.1:8100/',
     ],
 
     session: {
