@@ -29,6 +29,12 @@ export class Block implements BlockResourceItem {
         this.proof = rec.proof;
     }
 
+    /** Returns true if this is the genesis block. */
+    isGenesis() {
+        // FIXME sign this with GPG to verify that it came from here
+        return this.uuid === '0000'
+    }
+
     /** Generate the hash for this block. */
     hash() {
         return crypto.createHash('sha256')
@@ -119,8 +125,7 @@ export class Blockchain extends Unit {
     public async validate(chain: Block[]) {
         const blocks = collect<Block>(chain)
         return blocks.every((block: Block, idx: number) => {
-            if ( idx === 0 ) return true;  // TODO handle genesis
-
+            if ( idx === 0 ) return block.isGenesis()
             return block.lastBlockHash === blocks.at(idx)!.hash()
         })
     }
