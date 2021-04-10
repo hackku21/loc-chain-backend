@@ -468,7 +468,7 @@ export class Blockchain extends Unit {
 
         return Buffer.from((await openpgp.sign({
             message,
-            date: new Date(3000, 12),
+            // date: new Date(Date.now() - 30000),
             privateKeys: await openpgp.readKey({
                 armoredKey: privateKey
             }),
@@ -490,7 +490,7 @@ export class Blockchain extends Unit {
             lastBlockUUID: '',
             proof: (await openpgp.sign({
                 message,
-                date: new Date(3000, 12),
+                // date: new Date(3000, 12),
                 privateKeys: await openpgp.readKey({
                     armoredKey: privateKey
                 }),
@@ -550,7 +550,7 @@ export class Blockchain extends Unit {
         // Sign the hash using the server's private key
         return (await openpgp.sign({
             message,
-            date: new Date(3000, 12),
+            // date: new Date(3000, 12),
             privateKeys: await openpgp.readKey({
                 armoredKey: privateKey,
             })
