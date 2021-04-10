@@ -1,9 +1,11 @@
-import {Controller} from "@extollo/lib"
+import {Controller, Config} from "@extollo/lib"
 import {Injectable, Inject} from "@extollo/di"
 import {TransactionResource, TransactionResourceItem} from "../../../rtdb/TransactionResource"
-import {many, one} from "@extollo/util"
+import {Iterable, many, one} from "@extollo/util"
 import {Block, Blockchain as BlockchainService} from "../../../units/Blockchain"
 import {ExposureResource, ExposureResourceItem} from "../../../rtdb/ExposureResource";
+import {FirebaseUnit} from "../../../units/FirebaseUnit"
+import { BlockResource, BlockResourceItem } from "../../../rtdb/BlockResource"
 
 /**
  * Blockchain Controller
@@ -15,6 +17,11 @@ export class Blockchain extends Controller {
     @Inject()
     protected readonly blockchain!: BlockchainService
 
+    @Inject()
+    protected readonly config!: Config
+
+    @Inject()
+    protected readonly firebase!: FirebaseUnit
     /**
      * Read the version of the blockchain held by this host, as it currently exists.
      */
@@ -67,5 +74,19 @@ export class Blockchain extends Controller {
 
         await (<ExposureResource> this.make(ExposureResource)).push(item)
         return one(item)
+    }
+
+    public async check() {
+        let minTime = this.request.input('minTime')
+        if (!minTime) {
+            minTime = (new Date).getTime() - this.config.get('app.defaultTime')
+        }
+        const snapshot = await (<BlockResource> this.make(BlockResource)).ref()
+            .orderByChild('timestamp')
+            .startAt(minTime)
+            .once('value')
+    
+        let blocks = (Object.values(snapshot.val()) as BlockResourceItem[]).filter((item: BlockResourceItem) => item.seqID !== 0)
+        return many(blocks)
     }
 }

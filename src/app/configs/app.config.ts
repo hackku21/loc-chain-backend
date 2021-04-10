@@ -3,6 +3,7 @@ import * as fs from "fs"
 
 export default {
     name: env('APP_NAME', 'Extollo'),
+    defaultTime: env('DEFAULT_TIME', 1.21e+9),
 
     gpg: {
        key: {
