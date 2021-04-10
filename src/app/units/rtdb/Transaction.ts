@@ -1,9 +1,9 @@
-import {FirebaseUnit} from "../FirebaseUnit"
-import {TransactionResource, TransactionResourceItem} from "../../rtdb/TransactionResource"
-import {Singleton, Inject} from "@extollo/di"
-import {Unit, Logging} from "@extollo/lib"
+import { FirebaseUnit } from "../FirebaseUnit"
+import { TransactionResource, TransactionResourceItem } from "../../rtdb/TransactionResource"
+import { Singleton, Inject } from "@extollo/di"
+import { Unit, Logging } from "@extollo/lib"
 import * as openpgp from "openpgp"
-import {Blockchain} from "../Blockchain"
+import { Blockchain } from "../Blockchain"
 
 /**
  * Transaction Unit
@@ -18,7 +18,7 @@ export class Transaction extends Unit {
     @Inject()
     protected readonly blockchain!: Blockchain
 
-    public async compareTransactions(transaction1: TransactionResourceItem, transaction2: TransactionResourceItem){
+    public async compareTransactions(transaction1: TransactionResourceItem, transaction2: TransactionResourceItem) {
         // verify signature
         const result1 = await openpgp.verify({
             publicKeys: await openpgp.readKey({
@@ -38,9 +38,9 @@ export class Transaction extends Unit {
                 armoredSignature: transaction2.validationSignature // parse detached signature
             })
         })
-        return await (result1.signatures[0].verified) && await (result2.signatures[0].verified);
+        return await (result1.signatures[0].verified) && await (result2.signatures[0].verified)
     }
-    
+
     public async up() {
         this.firebase.ref("transaction").on("value", async () => {
             // array of pairs of tranaction resource items
@@ -51,25 +51,25 @@ export class Transaction extends Unit {
             transactions.each(transaction1 => {
                 // for each item that is not itself
                 transactions.where("combinedHash", "!=", transaction1.combinedHash)
-                // get a second item
-                .each(transaction2 => {
-                    //if the item matches
-                    if (this.compareTransactions(transaction1, transaction2)) {
-                        // and remove the two matching items
-                        transactions = transactions.whereNotIn("combinedHash", [transaction1.combinedHash, transaction2.combinedHash])
-                        // insert grouped items into groupedTransactions
-                        groupedTransactions.push([transaction1, transaction2]);
-                    }
-                })
+                    // get a second item
+                    .each(transaction2 => {
+                        //if the item matches
+                        if (this.compareTransactions(transaction1, transaction2)) {
+                            // and remove the two matching items
+                            transactions = transactions.whereNotIn("combinedHash", [transaction1.combinedHash, transaction2.combinedHash])
+                            // insert grouped items into groupedTransactions
+                            groupedTransactions.push([transaction1, transaction2])
+                        }
+                    })
             })
             for (const group of groupedTransactions) {
-                await this.blockchain.submitTransactions(group);
-                await this.firebase.ref("transaction").child(group[0].firebaseID).remove();
-                await this.firebase.ref("transaction").child(group[1].firebaseID).remove();
+                await this.blockchain.submitTransactions(group)
+                await this.firebase.ref("transaction").child(group[0].firebaseID).remove()
+                await this.firebase.ref("transaction").child(group[1].firebaseID).remove()
             }
         })
     }
-    
+
     public async down() {
     }
 }

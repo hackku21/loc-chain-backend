@@ -1,5 +1,5 @@
-import {Singleton, Inject} from "@extollo/di"
-import {Unit, Logging, Config} from "@extollo/lib"
+import { Singleton, Inject } from "@extollo/di"
+import { Unit, Logging, Config } from "@extollo/lib"
 import * as firebase from "firebase-admin"
 
 export type RTDBRef = 'peers' | 'transaction' | 'block'
@@ -11,7 +11,7 @@ export type RTDBRef = 'peers' | 'transaction' | 'block'
  */
 @Singleton()
 export class FirebaseUnit extends Unit {
-    protected _firebase = firebase;
+    protected _firebase = firebase
 
     @Inject()
     protected readonly logging!: Logging

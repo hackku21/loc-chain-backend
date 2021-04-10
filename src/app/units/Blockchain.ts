@@ -11,33 +11,33 @@ import { collect, uuid_v4 } from "@extollo/util"
  * Utility wrapper class for a block in the chain.
  */
 export class Block implements BlockResourceItem {
-    firebaseID: string;
-    seqID: number;
-    uuid: string;
-    transactions: BlockTransaction[];
-    timestamp: number;
-    lastBlockHash: string;
-    lastBlockUUID: string;
-    proof: string;
+    firebaseID: string
+    seqID: number
+    uuid: string
+    transactions: BlockTransaction[]
+    timestamp: number
+    lastBlockHash: string
+    lastBlockUUID: string
+    proof: string
     get config(): Config {
         return Application.getApplication().make(Config)
     }
     constructor(rec: BlockResourceItem) {
-        this.firebaseID = rec.firebaseID;
+        this.firebaseID = rec.firebaseID
         this.seqID = rec.seqID
         this.uuid = rec.uuid
         this.transactions = rec.transactions
         this.lastBlockHash = rec.lastBlockHash
         this.lastBlockUUID = rec.lastBlockUUID
-        this.proof = rec.proof;
-        this.timestamp = rec.timestamp;
+        this.proof = rec.proof
+        this.timestamp = rec.timestamp
     }
 
     /** Returns true if this is the genesis block. */
     async isGenesis() {
         // first block will be guaranteed uuid 0000
         if (this.uuid !== '0000') {
-            return false;
+            return false
         }
         const proof = this.proof
         const publicKey = this.config.get("app.gpg.key.public")
