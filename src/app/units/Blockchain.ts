@@ -4,7 +4,7 @@ import {FirebaseUnit} from "./FirebaseUnit"
 import {BlockResource, BlockResourceItem, BlockTransaction} from "../rtdb/BlockResource"
 import {TransactionResourceItem} from "../rtdb/TransactionResource"
 import * as crypto from "crypto"
-import {collect} from "@extollo/util";
+import {collect, uuid_v4} from "@extollo/util"
 
 export class Block implements BlockResourceItem {
     firebaseID: string;
@@ -16,6 +16,7 @@ export class Block implements BlockResourceItem {
     transactions: BlockTransaction[];
     lastBlockHash: string;
     lastBlockUUID: string;
+    proof: string;
 
     constructor(rec: BlockResourceItem) {
         this.firebaseID = rec.firebaseID;
@@ -27,6 +28,7 @@ export class Block implements BlockResourceItem {
         this.transactions = rec.transactions
         this.lastBlockHash = rec.lastBlockHash
         this.lastBlockUUID = rec.lastBlockUUID
+        this.proof = rec.proof;
     }
 
     hash() {
@@ -95,8 +97,10 @@ export class Blockchain extends Unit {
 
     }
 
-    public async submitBlock(afterBlock: Block, proofToken: string) {
-
+    public async submitBlock(block: BlockResourceItem, afterBlock: Block, proofToken: string) {
+        const newBlock = new Block(block)
+        newBlock.lastBlockHash = afterBlock.hash()
+        newBlock.lastBlockUUID = afterBlock.uuid
     }
 
     public async submitTransactions(group: [TransactionResourceItem, TransactionResourceItem]) {

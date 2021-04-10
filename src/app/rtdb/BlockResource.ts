@@ -45,6 +45,7 @@ export interface BlockResourceItem extends FirebaseResourceItem {
     transactions: BlockTransaction[];
     lastBlockHash: string;
     lastBlockUUID: string;
+    proof: string;
 }
 
 @Injectable()
