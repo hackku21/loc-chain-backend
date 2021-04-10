@@ -7,6 +7,9 @@ import * as openpgp from "openpgp"
 import * as crypto from "crypto"
 import {collect, uuid_v4} from "@extollo/util"
 
+/**
+ * Utility wrapper class for a block in the chain.
+ */
 export class Block implements BlockResourceItem {
     firebaseID: string;
     seqID: number;
@@ -26,12 +29,14 @@ export class Block implements BlockResourceItem {
         this.proof = rec.proof;
     }
 
+    /** Generate the hash for this block. */
     hash() {
         return crypto.createHash('sha256')
             .update(this.toString(), 'utf-8')
             .digest('hex')
     }
 
+    /** Cast the Block's data to a plain object. */
     toItem(): BlockResourceItem {
         return {
             seqID: this.seqID,
@@ -44,6 +49,7 @@ export class Block implements BlockResourceItem {
         }
     }
 
+    /** Generate the deterministic hash-able string. */
     toString() {
         return [
             this.uuid,
@@ -54,6 +60,9 @@ export class Block implements BlockResourceItem {
     }
 }
 
+/**
+ * Interface representing a federated peer.
+ */
 export interface Peer {
     host: string,
     name?: string,
@@ -120,6 +129,10 @@ export class Blockchain extends Unit {
 
     }
 
+    /**
+     * Submit a group of encounter transactions to be added to the chain.
+     * @param group
+     */
     public async submitTransactions(group: [TransactionResourceItem, TransactionResourceItem]) {
         let lastBlock = await this.getLastBlock()
         if ( !lastBlock ) await this.getGenesisBlock()
@@ -139,7 +152,10 @@ export class Blockchain extends Unit {
         return new Block(block)
     }
 
-    public async getGenesisBlock(): Promise<Block> {
+    /**
+     * Instantiate the genesis block of the entire chain.
+     */
+    public getGenesisBlock(): Block {
         return new Block({
             uuid: '0000',
             transactions: [],
@@ -151,19 +167,19 @@ export class Blockchain extends Unit {
         })
     }
 
+    /**
+     * Get the last block in the blockchain.
+     */
     public async getLastBlock(): Promise<Block | undefined> {
         const rec: BlockResourceItem | undefined = await BlockResource.collect().last()
         return rec ? new Block(rec) : undefined
     }
 
-    public async up() {
-
-    }
-
-    public async down() {
-
-    }
-
+    /**
+     * Given a client-submitted transaction, generate a block encounter transaction record.
+     * @param item
+     * @protected
+     */
     protected getEncounterTransaction(item: TransactionResourceItem): BlockEncounterTransaction {
         return {
             combinedHash: item.combinedHash,
@@ -172,6 +188,11 @@ export class Blockchain extends Unit {
         }
     }
 
+    /**
+     * Generate a proof of work string for the block that follows lastBlock.
+     * @param lastBlock
+     * @protected
+     */
     protected async generateProofOfWork(lastBlock: Block): Promise<string> {
         const hashString = lastBlock.hash()
         const privateKey = this.config.get("app.gpg.key.private")
@@ -184,6 +205,12 @@ export class Blockchain extends Unit {
         })).toString()
     }
 
+    /**
+     * Validate that the proof of work of currentBlock is accurate relative to lastBlock.
+     * @param currentBlock
+     * @param lastBlock
+     * @protected
+     */
     protected async validateProofOfWork(currentBlock: Block, lastBlock: Block): Promise<boolean> {
         const proof = lastBlock.proof
         const publicKey = this.config.get("app.gpg.key.public")
