@@ -1,8 +1,9 @@
 import {Singleton, Inject} from "@extollo/di"
-import {Unit, Logging} from "@extollo/lib"
+import {Unit, Logging, Config} from "@extollo/lib"
 import {FirebaseUnit} from "./FirebaseUnit"
 import {BlockResource, BlockResourceItem, BlockTransaction} from "../rtdb/BlockResource"
 import {TransactionResourceItem} from "../rtdb/TransactionResource"
+import * as openpgp from "openpgp"
 import * as crypto from "crypto"
 import {collect, uuid_v4} from "@extollo/util"
 
@@ -68,6 +69,9 @@ export class Blockchain extends Unit {
     @Inject()
     protected readonly firebase!: FirebaseUnit
 
+    @Inject()
+    protected readonly config!: Config
+
     public async hasPeer(host: string): Promise<boolean> {
         const peers = await this.getPeers()
         return peers.some(peer => peer.host.toLowerCase() === host.toLowerCase())
@@ -121,10 +125,28 @@ export class Blockchain extends Unit {
     }
 
     protected async generateProofOfWork(lastBlock: Block): Promise<string> {
-        const hash = lastBlock.hash()
+        const hashString = lastBlock.hash()
+        const privateKey = this.config.get("app.gpg.key.private")
+        const message = openpgp.Message.fromText(hashString)
 
-        // Create a signature from the hash using the server's private key
+        // Sign the hash using the server's private key
+        return (await openpgp.sign({
+            message,
+            privateKeys: privateKey
+        })).toString()
+    }
 
-        return hash
+    protected async validateProofOfWork(currentBlock: Block, lastBlock: Block): Promise<boolean> {
+        const proof = lastBlock.proof
+        const publicKey = this.config.get("app.gpg.key.public")
+        const message = openpgp.Message.fromText(proof)
+
+        // Verify the signature
+        const verified = await (await openpgp.verify({
+            message,
+            publicKeys: publicKey
+        })).signatures[0].verified
+        
+        return !!verified
     }
 }
