@@ -7,6 +7,7 @@ import * as crypto from "crypto"
 import {collect} from "@extollo/util";
 
 export class Block implements BlockResourceItem {
+    firebaseID: string;
     seqID: number;
     uuid: string;
     combinedHash: string;
@@ -17,6 +18,7 @@ export class Block implements BlockResourceItem {
     lastBlockUUID: string;
 
     constructor(rec: BlockResourceItem) {
+        this.firebaseID = rec.firebaseID;
         this.seqID = rec.seqID
         this.uuid = rec.uuid
         this.combinedHash = rec.combinedHash
