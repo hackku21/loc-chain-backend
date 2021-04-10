@@ -58,6 +58,7 @@ export interface BlockResourceItem extends FirebaseResourceItem {
     proof: string;  // the generated proof-of-work string
     timestamp: number;  // millisecond unix timestamp when this block was created
     waitTime: number;  // number of milliseconds between last block and this one
+    peer: string;  // the host URL of the peer that submitted this block
 }
 
 /**

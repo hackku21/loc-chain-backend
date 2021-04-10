@@ -29,6 +29,7 @@ export class Block implements BlockResourceItem {
     lastBlockUUID: string
     proof: string
     waitTime: number
+    peer: string
 
     get config(): Config {
         return Application.getApplication().make(Config)
@@ -44,6 +45,7 @@ export class Block implements BlockResourceItem {
         this.proof = rec.proof
         this.timestamp = rec.timestamp
         this.waitTime = rec.waitTime
+        this.peer = rec.peer
     }
 
     /** Returns true if this is the genesis block. */
@@ -86,6 +88,7 @@ export class Block implements BlockResourceItem {
             proof: this.proof,
             timestamp: this.timestamp,
             waitTime: this.waitTime,
+            peer: this.peer,
         }
     }
 
@@ -116,6 +119,11 @@ export interface Peer {
  */
 @Singleton()
 export class Blockchain extends Unit {
+    private readonly MIN_WAIT_TIME = 1000
+    private readonly MAX_WAIT_TIME = 5000
+    private readonly PENALTY_INTERVAL = 500
+    private readonly MAX_PEERS_PENALTY = 10
+
     @Inject()
     protected readonly logging!: Logging
 
@@ -240,6 +248,7 @@ export class Blockchain extends Unit {
 
         const peers = await this.getPeers()
         const time_x_block: {[key: string]: Block} = {}
+        const time_x_blocks: {[key: string]: Block[]} = {}
         const time_x_peer: {[key: string]: Peer | true} = {}
 
         for ( const peer of peers ) {
@@ -248,7 +257,15 @@ export class Blockchain extends Unit {
                 const block = blocks.reverse()[0]
                 if ( !block || block.seqID === validSeqID || !block.seqID ) continue
 
+                const penalty = blocks.slice(0, 10)
+                    .map(block => block.peer === peer.host)
+                    .filter(Boolean).length * this.PENALTY_INTERVAL
+                    * (Math.min(peers.length, this.MAX_PEERS_PENALTY))
+
+                block.waitTime += penalty
+
                 time_x_block[block.waitTime] = block
+                time_x_blocks[block.waitTime] = blocks
                 time_x_peer[block.waitTime] = peer
             }
         }
@@ -266,11 +283,15 @@ export class Blockchain extends Unit {
         const block = time_x_block[min]
         const peer = time_x_peer[min]
 
-        await (<BlockResource>this.app().make(BlockResource)).push(block)
         if ( peer === true ) {
             this.pendingSubmit = undefined
             this.pendingTransactions = []
+            await (<BlockResource>this.app().make(BlockResource)).push(block)
         } else {
+            await this.firebase.ref('block').transaction((_) => {
+                return time_x_blocks[min].map(x => x.toItem())
+            })
+
             this.pendingSubmit = undefined
             await this.attemptSubmit()
         }
@@ -292,7 +313,7 @@ export class Blockchain extends Unit {
     public async attemptSubmit() {
         if ( !this.pendingSubmit && this.pendingTransactions.length ) {
             const lastBlock = await this.getLastBlock()
-            const waitTime = this.random(3000, 5000)
+            const waitTime = this.random(this.MIN_WAIT_TIME, this.MAX_WAIT_TIME)
             const proof = await this.generateProofOfWork(lastBlock, waitTime)
 
             const block: BlockResourceItem = {
@@ -303,6 +324,7 @@ export class Blockchain extends Unit {
                 lastBlockUUID: lastBlock!.uuid,
                 proof,
                 waitTime,
+                peer: this.getBaseURL(),
 
                 firebaseID: '',
                 seqID: -1,
@@ -404,6 +426,7 @@ export class Blockchain extends Unit {
             firebaseID: '',
             seqID: -1,
             waitTime: 0,
+            peer: this.getBaseURL(),
         })
     }
 
@@ -481,6 +504,16 @@ export class Blockchain extends Unit {
         })
 
         return !!(await result.signatures?.[0]?.verified)
+    }
+
+    /**
+     * Get the base URL that identifies this peer.
+     * This should be the endpoint used to fetch the submitted blockchain.
+     * @protected
+     */
+    protected getBaseURL(): string {
+        const base = this.config.get('server.base_url')
+        return `${base}${base.endsWith('/') ? '' : '/'}api/v1/chain/submit`
     }
 
     /** Sleep for (roughly) the given number of milliseconds. */

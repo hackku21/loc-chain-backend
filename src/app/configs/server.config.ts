@@ -4,6 +4,8 @@ import {LocalFilesystem, LocalFilesystemConfig} from "@extollo/util"
 export default {
     debug: env('DEBUG_MODE', false),
 
+    base_url: env('BASE_URL', 'http://localhost:8000/'),
+
     session: {
         /* The implementation of @extollo/lib.Session that serves as the session backend. */
         driver: MemorySession,
