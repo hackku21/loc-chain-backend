@@ -79,8 +79,6 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
      * @param item
      */
     async push(item: T): Promise<T> {
-        await this.firebase.trylock(this.refName)
-
         await this.ref().transaction((collection) => {
             if ( !collection ) collection = []
             item.seqID = this.findNextId(collection)
@@ -103,7 +101,6 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
                 })
         })
 
-        await this.firebase.unlock(this.refName)
         return item
     }
 

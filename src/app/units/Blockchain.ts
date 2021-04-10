@@ -281,6 +281,7 @@ export class Blockchain extends Unit {
             this.isSubmitting = true
         }
 
+        await this.firebase.trylock('block')
         const validSeqID = (await this.read()).reverse()[0]?.seqID
 
         const peers = await this.getPeers()
@@ -347,6 +348,7 @@ export class Blockchain extends Unit {
             await this.attemptSubmit()
         }
 
+        await this.firebase.unlock('block')
         this.isSubmitting = false
     }
 
