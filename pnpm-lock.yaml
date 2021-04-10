@@ -2,7 +2,6 @@ dependencies:
   '@extollo/cli': 0.4.4
   '@extollo/di': 0.4.5
   '@extollo/lib': 0.1.4
-  '@extollo/orm': 0.1.4
   '@extollo/util': 0.3.3
   bcrypt: 5.0.1
   copyfiles: 2.4.1
@@ -68,19 +67,6 @@ packages:
     dev: false
     resolution:
       integrity: sha512-q+koxqgTblWokgmZNK5dK9k9/qj3Imad5gGRNr4zpX9VzXY7xryYuwUaG5JGJ1kfvoSiNEVZaXHBsq9pngek+w==
-  /@extollo/orm/0.1.4:
-    dependencies:
-      '@extollo/cli': 0.4.4
-      '@extollo/di': 0.4.5
-      '@extollo/lib': 0.1.4
-      '@extollo/util': 0.3.3
-      '@types/node': 14.14.37
-      '@types/pg': 7.14.11
-      pg: 8.5.1
-      typescript: 4.2.4
-    dev: false
-    resolution:
-      integrity: sha512-HCELzDXq2VWmtKkZ6ZjLcP9xuSelkR9zFQgOiujRrbskOPC1Piacg3UXxDTxi2jDhg5EKoRIy+mAolug/WiFJw==
   /@extollo/util/0.3.3:
     dependencies:
       '@types/mkdirp': 1.0.1
@@ -368,14 +354,6 @@ packages:
     dev: false
     resolution:
       integrity: sha512-XYmBiy+ohOR4Lh5jE379fV2IU+6Jn4g5qASinhitfyO71b/sCo6MKsMLF5tc7Zf2CE8hViVQyYSobJNke8OvUw==
-  /@types/pg/7.14.11:
-    dependencies:
-      '@types/node': 14.14.37
-      pg-protocol: 1.4.0
-      pg-types: 2.2.0
-    dev: false
-    resolution:
-      integrity: sha512-EnZkZ1OMw9DvNfQkn2MTJrwKmhJYDEs5ujWrPfvseWNoI95N8B4HzU/Ltrq5ZfYxDX/Zg8mTzwr6UAyTjjFvXA==
   /@types/pug/2.0.4:
     dev: false
     resolution:
@@ -561,12 +539,6 @@ packages:
     dev: false
     resolution:
       integrity: sha512-MQcXEUbCKtEo7bhqEs6560Hyd4XaovZlO/k9V3hjVUF/zwW7KBVdSK4gIt/bzwS9MbR5qob+F5jusZsb0YQK2A==
-  /buffer-writer/2.0.0:
-    dev: false
-    engines:
-      node: '>=4'
-    resolution:
-      integrity: sha512-a7ZpuTZU1TRtnwyCNW3I5dc0wWNC3VR9S++Ewyk2HHZdrO3CQJqSpd+95Us590V6AL7JqUAH2IwZ/398PmNFgw==
   /busboy/0.3.1:
     dependencies:
       dicer: 0.3.0
@@ -1454,10 +1426,6 @@ packages:
     optional: true
     resolution:
       integrity: sha512-TYOanM3wGwNGsZN2cVTYPArw454xnXj5qmWF1bEoAc4+cU/ol7GVh7odevjp1FNHduHc3KZMcFduxU5Xc6uJRQ==
-  /packet-reader/1.0.0:
-    dev: false
-    resolution:
-      integrity: sha512-HAKu/fG3HpHFO0AA8WE8q2g+gBJaZ9MG7fcKk+IJPLTGAD6Psw4443l+9DGRbOIh3/aXr7Phy0TjilYivJo5XQ==
   /path-is-absolute/1.0.1:
     dev: false
     engines:
@@ -1468,91 +1436,6 @@ packages:
     dev: false
     resolution:
       integrity: sha512-GSmOT2EbHrINBf9SR7CDELwlJ8AENk3Qn7OikK4nFYAu3Ote2+JYNVvkpAEQm3/TLNEJFD/xZJjzyxg3KBWOzw==
-  /pg-connection-string/2.4.0:
-    dev: false
-    resolution:
-      integrity: sha512-3iBXuv7XKvxeMrIgym7njT+HlZkwZqqGX4Bu9cci8xHZNT+Um1gWKqCsAzcC0d95rcKMU5WBg6YRUcHyV0HZKQ==
-  /pg-int8/1.0.1:
-    dev: false
-    engines:
-      node: '>=4.0.0'
-    resolution:
-      integrity: sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==
-  /pg-pool/3.2.2_pg@8.5.1:
-    dependencies:
-      pg: 8.5.1
-    dev: false
-    peerDependencies:
-      pg: '>=8.0'
-    resolution:
-      integrity: sha512-ORJoFxAlmmros8igi608iVEbQNNZlp89diFVx6yV5v+ehmpMY9sK6QgpmgoXbmkNaBAx8cOOZh9g80kJv1ooyA==
-  /pg-protocol/1.4.0:
-    dev: false
-    resolution:
-      integrity: sha512-El+aXWcwG/8wuFICMQjM5ZSAm6OWiJicFdNYo+VY3QP+8vI4SvLIWVe51PppTzMhikUJR+PsyIFKqfdXPz/yxA==
-  /pg-types/2.2.0:
-    dependencies:
-      pg-int8: 1.0.1
-      postgres-array: 2.0.0
-      postgres-bytea: 1.0.0
-      postgres-date: 1.0.7
-      postgres-interval: 1.2.0
-    dev: false
-    engines:
-      node: '>=4'
-    resolution:
-      integrity: sha512-qTAAlrEsl8s4OiEQY69wDvcMIdQN6wdz5ojQiOy6YRMuynxenON0O5oCpJI6lshc6scgAY8qvJ2On/p+CXY0GA==
-  /pg/8.5.1:
-    dependencies:
-      buffer-writer: 2.0.0
-      packet-reader: 1.0.0
-      pg-connection-string: 2.4.0
-      pg-pool: 3.2.2_pg@8.5.1
-      pg-protocol: 1.4.0
-      pg-types: 2.2.0
-      pgpass: 1.0.4
-    dev: false
-    engines:
-      node: '>= 8.0.0'
-    peerDependencies:
-      pg-native: '>=2.0.0'
-    peerDependenciesMeta:
-      pg-native:
-        optional: true
-    resolution:
-      integrity: sha512-9wm3yX9lCfjvA98ybCyw2pADUivyNWT/yIP4ZcDVpMN0og70BUWYEGXPCTAQdGTAqnytfRADb7NERrY1qxhIqw==
-  /pgpass/1.0.4:
-    dependencies:
-      split2: 3.2.2
-    dev: false
-    resolution:
-      integrity: sha512-YmuA56alyBq7M59vxVBfPJrGSozru8QAdoNlWuW3cz8l+UX3cWge0vTvjKhsSHSJpo3Bom8/Mm6hf0TR5GY0+w==
-  /postgres-array/2.0.0:
-    dev: false
-    engines:
-      node: '>=4'
-    resolution:
-      integrity: sha512-VpZrUqU5A69eQyW2c5CA1jtLecCsN2U/bD6VilrFDWq5+5UIEVO7nazS3TEcHf1zuPYO/sqGvUvW62g86RXZuA==
-  /postgres-bytea/1.0.0:
-    dev: false
-    engines:
-      node: '>=0.10.0'
-    resolution:
-      integrity: sha1-AntTPAqokOJtFy1Hz5zOzFIazTU=
-  /postgres-date/1.0.7:
-    dev: false
-    engines:
-      node: '>=0.10.0'
-    resolution:
-      integrity: sha512-suDmjLVQg78nMK2UZ454hAG+OAW+HQPZ6n++TNDUX+L0+uUlLywnoxJKDou51Zm+zTCjrCl0Nq6J9C5hP9vK/Q==
-  /postgres-interval/1.2.0:
-    dependencies:
-      xtend: 4.0.2
-    dev: false
-    engines:
-      node: '>=0.10.0'
-    resolution:
-      integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==
   /process-nextick-args/2.0.1:
     dev: false
     resolution:
@@ -1721,6 +1604,7 @@ packages:
     dev: false
     engines:
       node: '>= 6'
+    optional: true
     resolution:
       integrity: sha512-BViHy7LKeTz4oNnkcLJ+lVSL6vpiFeX6/d3oSH8zCW7UxP2onchk+vTGB143xuFjHS3deTgkKoXXymXqymiIdA==
   /reflect-metadata/0.1.13:
@@ -1820,12 +1704,6 @@ packages:
       node: '>=0.10.0'
     resolution:
       integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==
-  /split2/3.2.2:
-    dependencies:
-      readable-stream: 3.6.0
-    dev: false
-    resolution:
-      integrity: sha512-9NThjpgZnifTkJpzTZ7Eue85S49QwpNhZTq6GRJwObb6jnLFNGB7Qm73V5HewTROPyxD0C29xqmaI68bQtV+hg==
   /ssh2-streams/0.4.10:
     dependencies:
       asn1: 0.2.4
@@ -1896,6 +1774,7 @@ packages:
     dependencies:
       safe-buffer: 5.2.1
     dev: false
+    optional: true
     resolution:
       integrity: sha512-hkRX8U1WjJFd8LsDJ2yQ/wWWxaopEsABU1XfkM8A+j0+85JAGppt16cr1Whg6KIbb4okU6Mql6BOj+uup/wKeA==
   /strip-ansi/3.0.1:
@@ -2148,7 +2027,6 @@ specifiers:
   '@extollo/cli': ^0.4.4
   '@extollo/di': ^0.4.5
   '@extollo/lib': ^0.1.4
-  '@extollo/orm': ^0.1.4
   '@extollo/util': ^0.3.3
   bcrypt: ^5.0.1
   copyfiles: ^2.4.1

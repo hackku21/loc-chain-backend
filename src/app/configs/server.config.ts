@@ -1,5 +1,4 @@
-import {env, basePath} from "@extollo/lib"
-import {ORMSession} from "@extollo/orm"
+import {env, basePath, MemorySession} from "@extollo/lib"
 import {LocalFilesystem, LocalFilesystemConfig} from "@extollo/util"
 
 export default {
@@ -7,7 +6,7 @@ export default {
 
     session: {
         /* The implementation of @extollo/lib.Session that serves as the session backend. */
-        driver: ORMSession,
+        driver: MemorySession,
     },
 
     /*
