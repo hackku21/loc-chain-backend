@@ -330,7 +330,18 @@ export class Blockchain extends Unit {
             this.pendingTransactions = []
             await (<BlockResource>this.app().make(BlockResource)).push(block)
         } else {
-            await this.firebase.ref('block').transaction((_) => {
+            await this.firebase.ref('block').set((time_x_blocks[min] || []).map(x => {
+                const item = x.toItem()
+                // @ts-ignore
+                delete item.firebaseID
+
+                if ( !item.transactions ) {
+                    item.transactions = []
+                }
+
+                return item
+            }))
+            /*await this.firebase.ref('block').transaction((_) => {
                 return (time_x_blocks[min] || []).map(x => {
                     const item = x.toItem()
                     // @ts-ignore
@@ -342,7 +353,7 @@ export class Blockchain extends Unit {
 
                     return item
                 })
-            })
+            })*/
 
             this.pendingSubmit = undefined
             await this.attemptSubmit()
