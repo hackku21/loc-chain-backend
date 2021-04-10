@@ -25,7 +25,7 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
         return new Promise<number>((res, rej) => {
             this.ref().orderByChild('seqID')
                 .on('value', snapshot => {
-                    res((this.resolveObject(snapshot.val()).reverse()?.[0]?.seqID || 0) + 1)
+                    res((this.resolveObject(snapshot.val()).reverse()?.[0]?.seqID ?? -1) + 1)
                 }, rej)
         })
     }
@@ -66,7 +66,22 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
      */
     async push(item: T): Promise<T> {
         item.seqID = await this.getNextID()
+        // @ts-ignore
+        delete item.firebaseID
         await this.ref().push(item)
+
+        // Look up the firebaseID
+        await new Promise<void>((res, rej) => {
+            this.ref().orderByChild('seqID')
+                .limitToLast(1)
+                .on('value', snapshot => {
+                    if ( snapshot.val() ) {
+                        item.firebaseID = Object.keys(snapshot.val())[0]
+                    }
+                    res()
+                })
+        })
+
         return item
     }
 

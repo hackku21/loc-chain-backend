@@ -156,6 +156,9 @@ export class Blockchain extends Unit {
     public async submitTransactions(group: [TransactionResourceItem, TransactionResourceItem]) {
         const lastBlock = await this.getLastBlock()
 
+        this.logging.verbose('Last block:')
+        this.logging.verbose(lastBlock)
+
         const block: BlockResourceItem = {
             timestamp: (new Date).getTime(),
             uuid: uuid_v4(),
@@ -178,6 +181,7 @@ export class Blockchain extends Unit {
     public async getGenesisBlock(): Promise<Block> {
         const message = openpgp.Message.fromText("0000")
         const privateKey = this.config.get("app.gpg.key.private")
+
         return new Block({
             timestamp: (new Date).getTime(),
             uuid: '0000',
@@ -186,8 +190,10 @@ export class Blockchain extends Unit {
             lastBlockUUID: '',
             proof: (await openpgp.sign({
                 message,
-                privateKeys: privateKey
-            })).toString(),
+                privateKeys: await openpgp.readKey({
+                    armoredKey: privateKey
+                }),
+            })),
             firebaseID: '',
             seqID: -1,
         })
@@ -202,7 +208,7 @@ export class Blockchain extends Unit {
 
         const genesis = (await this.getGenesisBlock()).toItem()
         await (<BlockResource>this.app().make(BlockResource)).push(genesis)
-        return this.getLastBlock()
+        return new Block(genesis)
     }
 
     /**
@@ -231,7 +237,9 @@ export class Blockchain extends Unit {
         // Sign the hash using the server's private key
         return (await openpgp.sign({
             message,
-            privateKeys: privateKey
+            privateKeys: await openpgp.readKey({
+                armoredKey: privateKey,
+            })
         })).toString()
     }
 
