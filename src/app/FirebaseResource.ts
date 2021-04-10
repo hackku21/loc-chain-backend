@@ -20,6 +20,10 @@ export interface FirebaseResourceItem {
 export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T> {
     protected refName!: RTDBRef
 
+    get firebase() {
+        return Application.getApplication().make<FirebaseUnit>(FirebaseUnit)
+    }
+
     /** Get the Reference for this resource. */
     ref(): firebase.database.Reference {
         return Application.getApplication().make<FirebaseUnit>(FirebaseUnit).ref(this.refName)
@@ -75,6 +79,8 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
      * @param item
      */
     async push(item: T): Promise<T> {
+        await this.firebase.trylock(this.refName)
+
         await this.ref().transaction((collection) => {
             if ( !collection ) collection = []
             item.seqID = this.findNextId(collection)
@@ -97,6 +103,7 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
                 })
         })
 
+        await this.firebase.unlock(this.refName)
         return item
     }
 
