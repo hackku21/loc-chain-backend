@@ -3,6 +3,8 @@ import {TransactionResource, TransactionResourceItem} from "../../rtdb/Transacti
 import {Singleton, Inject} from "@extollo/di"
 import {Unit, Logging} from "@extollo/lib"
 import * as openpgp from "openpgp"
+import {Blockchain} from "../Blockchain"
+
 /**
  * Transaction Unit
  * ---------------------------------------
@@ -12,6 +14,9 @@ import * as openpgp from "openpgp"
 export class Transaction extends Unit {
     @Inject()
     protected readonly firebase!: FirebaseUnit
+
+    @Inject()
+    protected readonly blockchain!: Blockchain
 
     public async compareTransactions(transaction1: TransactionResourceItem, transaction2: TransactionResourceItem){
         // verify signature
@@ -57,6 +62,11 @@ export class Transaction extends Unit {
                     }
                 })
             })
+            for (const group of groupedTransactions) {
+                await this.blockchain.submitTransactions(group);
+                await this.firebase.ref("transaction").child(group[0].firebaseID).remove();
+                await this.firebase.ref("transaction").child(group[1].firebaseID).remove();
+            }
         })
     }
     
