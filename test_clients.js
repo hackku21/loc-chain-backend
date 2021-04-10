@@ -17,7 +17,7 @@ class TestClient {
     }
 
     async interactWith(otherClient) {
-        const hash = this.getHash(otherClient.id)
+        const hash = otherClient.getHash(this.id)
         const message = openpgp.Message.fromText(hash)
         const signature = (await openpgp.sign({
             message, privateKeys: await openpgp.readKey({
