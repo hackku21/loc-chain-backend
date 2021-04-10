@@ -15,6 +15,7 @@ export class Block implements BlockResourceItem {
     seqID: number;
     uuid: string;
     transactions: BlockTransaction[];
+    timestamp: number;
     lastBlockHash: string;
     lastBlockUUID: string;
     proof: string;
@@ -27,6 +28,7 @@ export class Block implements BlockResourceItem {
         this.lastBlockHash = rec.lastBlockHash
         this.lastBlockUUID = rec.lastBlockUUID
         this.proof = rec.proof;
+        this.timestamp = rec.timestamp;
     }
 
     /** Returns true if this is the genesis block. */
@@ -52,6 +54,7 @@ export class Block implements BlockResourceItem {
             lastBlockHash: this.lastBlockHash,
             lastBlockUUID: this.lastBlockUUID,
             proof: this.proof,
+            timestamp: this.timestamp,
         }
     }
 
@@ -139,10 +142,10 @@ export class Blockchain extends Unit {
      * @param group
      */
     public async submitTransactions(group: [TransactionResourceItem, TransactionResourceItem]) {
-        let lastBlock = await this.getLastBlock()
-        if ( !lastBlock ) await this.getGenesisBlock()
+        const lastBlock = await this.getLastBlock()
 
         const block: BlockResourceItem = {
+            timestamp: (new Date).getTime(),
             uuid: uuid_v4(),
             transactions: group.map(item => this.getEncounterTransaction(item)),
             lastBlockHash: lastBlock!.hash(),
@@ -162,6 +165,7 @@ export class Blockchain extends Unit {
      */
     public getGenesisBlock(): Block {
         return new Block({
+            timestamp: (new Date).getTime(),
             uuid: '0000',
             transactions: [],
             lastBlockHash: '',
@@ -173,11 +177,15 @@ export class Blockchain extends Unit {
     }
 
     /**
-     * Get the last block in the blockchain.
+     * Get the last block in the blockchain, or push the genesis if one doesn't already exist.
      */
-    public async getLastBlock(): Promise<Block | undefined> {
+    public async getLastBlock(): Promise<Block> {
         const rec: BlockResourceItem | undefined = await BlockResource.collect().last()
-        return rec ? new Block(rec) : undefined
+        if ( rec ) return new Block(rec)
+
+        const genesis = this.getGenesisBlock().toItem()
+        await (<BlockResource> this.app().make(BlockResource)).push(genesis)
+        return this.getLastBlock()
     }
 
     /**
