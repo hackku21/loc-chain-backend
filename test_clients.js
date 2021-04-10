@@ -20,10 +20,11 @@ class TestClient {
         const hash = otherClient.getHash(this.id)
         const message = openpgp.Message.fromText(hash)
         const signature = (await openpgp.sign({
-            message, privateKeys: await openpgp.readKey({
+            message,
+            privateKeys: await openpgp.readKey({
                 armoredKey: this.privateKey
             })
-        })).toString()
+        }))
 
         return {
             combinedHash: hash,
@@ -43,5 +44,26 @@ class TestClient {
     const b_transact = await client_b.interactWith(client_a)
 
     console.log(a_transact, b_transact)
+    postTo('/api/v1/encounter', a_transact)
+    postTo('/api/v1/encounter', b_transact)
 })()
+
+function postTo(endpoint, data) {
+    data = JSON.stringify(data)
+
+    const options = {
+        hostname: 'localhost',
+        port: 8000,
+        path: endpoint,
+        method: 'POST',
+        headers: {
+            'content-type': 'application/json',
+            'content-length': data.length,
+        }
+    }
+
+    const req = require('http').request(options)
+    req.write(data)
+    req.end()
+}
 
