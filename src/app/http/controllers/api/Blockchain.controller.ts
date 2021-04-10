@@ -3,6 +3,7 @@ import {Injectable, Inject} from "@extollo/di"
 import {TransactionResource, TransactionResourceItem} from "../../../rtdb/TransactionResource"
 import {many, one} from "@extollo/util"
 import {Blockchain as BlockchainService} from "../../../units/Blockchain"
+import {ExposureResource, ExposureResourceItem} from "../../../rtdb/ExposureResource";
 
 /**
  * Blockchain Controller
@@ -40,6 +41,21 @@ export class Blockchain extends Controller {
         }
 
         await (<TransactionResource> this.make(TransactionResource)).push(item)
+        return one(item)
+    }
+
+    /**
+     * Post a new exposure notification to the blockchain. This is only intended for testing.
+     */
+    public async postExposure() {
+        const item: ExposureResourceItem = {
+            firebaseID: '',
+            seqID: -1,
+            clientID: String(this.request.input('clientID')),
+            timestamp: parseInt(String(this.request.input('timestamp'))),
+        }
+
+        await (<ExposureResource> this.make(ExposureResource)).push(item)
         return one(item)
     }
 }

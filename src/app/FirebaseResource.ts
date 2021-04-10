@@ -1,5 +1,5 @@
 import {Inject, Injectable} from "@extollo/di"
-import {Collection, Iterable} from "@extollo/util"
+import {collect, Collection, Iterable} from "@extollo/util"
 import {FirebaseUnit, RTDBRef} from "./units/FirebaseUnit"
 import * as firebase from "firebase-admin"
 import {Application} from "@extollo/lib"

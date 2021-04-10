@@ -6,6 +6,7 @@ import { TransactionResourceItem } from "../rtdb/TransactionResource"
 import * as openpgp from "openpgp"
 import * as crypto from "crypto"
 import { collect, uuid_v4 } from "@extollo/util"
+import {ExposureResourceItem} from "../rtdb/ExposureResource";
 
 /**
  * Utility wrapper class for a block in the chain.
@@ -168,6 +169,32 @@ export class Blockchain extends Unit {
             lastBlockHash: lastBlock!.hash(),
             lastBlockUUID: lastBlock!.uuid,
             proof: await this.generateProofOfWork(lastBlock!),
+
+            firebaseID: '',
+            seqID: -1,
+        }
+
+        await (<BlockResource>this.app().make(BlockResource)).push(block)
+        return new Block(block)
+    }
+
+    /**
+     * Submit the given exposure notifications onto the blockchain.
+     * @param exposures
+     */
+    public async submitExposures(...exposures: ExposureResourceItem[]) {
+        const lastBlock = await this.getLastBlock()
+
+        this.logging.verbose('Last block:')
+        this.logging.verbose(lastBlock)
+
+        const block: BlockResourceItem = {
+            timestamp: (new Date).getTime(),
+            uuid: uuid_v4(),
+            transactions: exposures,
+            lastBlockHash: lastBlock!.hash(),
+            lastBlockUUID: lastBlock!.uuid,
+            proof: await this.generateProofOfWork(lastBlock),
 
             firebaseID: '',
             seqID: -1,
