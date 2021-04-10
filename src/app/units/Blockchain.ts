@@ -119,9 +119,9 @@ export interface Peer {
  */
 @Singleton()
 export class Blockchain extends Unit {
-    private readonly MIN_WAIT_TIME = 30
-    private readonly MAX_WAIT_TIME = 500
-    private readonly PENALTY_INTERVAL = 100
+    private readonly MIN_WAIT_TIME = 10000
+    private readonly MAX_WAIT_TIME = 20000
+    private readonly PENALTY_INTERVAL = 1000
     private readonly MAX_PEERS_PENALTY = 10
 
     @Inject()

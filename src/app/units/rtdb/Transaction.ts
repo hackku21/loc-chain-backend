@@ -83,6 +83,7 @@ export class Transaction extends Unit {
             let groupedTransactions: [TransactionResourceItem, TransactionResourceItem][] = []
             // collection of transaction resource items
             let transactions = await TransactionResource.collect().collect()
+            await this.firebase.unlock('block')
 
             // compare each item
             await transactions.promiseMap(async transaction1 => {
@@ -111,6 +112,7 @@ export class Transaction extends Unit {
                 return false
             })
 
+            await this.firebase.trylock('block', 'Transaction_submitTransactions')
             for (const group of groupedTransactions) {
                 const block = await this.blockchain.submitTransactions(group)
 

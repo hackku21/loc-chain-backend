@@ -47,7 +47,7 @@ export class Exposure extends Unit {
         this.firebase.ref('exposure').on('child_added', async (snapshot) => {
             this.logging.debug('Received child_added event for exposures reference.')
             if ( !this.claim() ) return
-            await this.firebase.trylock('block', 'Exposure_child_added')
+            // await this.firebase.trylock('block', 'Exposure_child_added')
 
             const exposure: ExposureResourceItem = snapshot.val()
 
@@ -58,7 +58,7 @@ export class Exposure extends Unit {
                 await (<ExposureResource> this.make(ExposureResource)).ref().child(snapshot.key).remove()
 
             this.release()
-            await this.firebase.unlock('block')
+            // await this.firebase.unlock('block')
         })
     }
 
