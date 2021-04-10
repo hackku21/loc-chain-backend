@@ -77,7 +77,7 @@ export class Transaction extends Unit {
         this.firebase.ref("transaction").on("child_added", async () => {
             this.logging.debug('Received child_added event for transactions reference.')
             if ( !this.claim() ) return
-            await this.firebase.trylock('block')
+            await this.firebase.trylock('block', 'Transaction_child_added')
 
             // array of pairs of transaction resource items
             let groupedTransactions: [TransactionResourceItem, TransactionResourceItem][] = []

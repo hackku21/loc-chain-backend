@@ -281,7 +281,7 @@ export class Blockchain extends Unit {
             this.isSubmitting = true
         }
 
-        await this.firebase.trylock('block')
+        await this.firebase.trylock('block', 'Blockchain_refresh')
         const validSeqID = (await this.read()).reverse()[0]?.seqID
 
         const peers = await this.getPeers()

@@ -40,14 +40,16 @@ export class FirebaseUnit extends Unit {
      * Try to lock the given database ref alias.
      * Promise will sleep if lock is held, and will resolve once lock is acquired.
      * @param name
+     * @param description
      */
-    async trylock(name: RTDBRef): Promise<any> {
+    async trylock(name: RTDBRef, description: string): Promise<any> {
         return this._firebase.database()
             .ref(`${this.config.get('app.firebase.rtdb.refs.locks')}/${name}`)
             .transaction(current => {
                 if ( !current || current.time < 1 ) {
                     return {
                         time: (new Date).getTime(),
+                        description,
                     }
                 }
             }, undefined, false).then(async result => {
@@ -58,12 +60,12 @@ export class FirebaseUnit extends Unit {
 
                 this.logging.debug(`Unable to acquire lock: ${name}. Trying again soon...`)
                 await this.sleep(500)
-                return this.trylock(name)
+                return this.trylock(name, description)
             })
             .catch(async reason => {
                 this.logging.debug(`Unable to acquire lock: ${name}. Trying again soon...`)
                 await this.sleep(500)
-                return this.trylock(name)
+                return this.trylock(name, description)
             })
     }
 
@@ -74,7 +76,7 @@ export class FirebaseUnit extends Unit {
     async unlock(name: RTDBRef) {
         await this._firebase.database()
             .ref(`${this.config.get('app.firebase.rtdb.refs.locks')}/${name}`)
-            .set({time: 0}, err => {
+            .set({time: 0, description: 'none'}, err => {
                 if ( err ) this.logging.error(err)
             })
     }
