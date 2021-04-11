@@ -23,4 +23,7 @@ Route.group('/api/v1', () => {
         .pre('DebugOnly')
 
     Route.get('/chain/submit', 'api:Blockchain.readBlockchainSubmission')
+    
+    Route.get('/exposure', 'api:Blockchain.getExposure')
+        .pre('api:FirebaseUserOnly')
 })

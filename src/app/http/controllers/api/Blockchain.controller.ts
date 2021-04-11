@@ -22,6 +22,20 @@ export class Blockchain extends Controller {
 
     @Inject()
     protected readonly firebase!: FirebaseUnit
+    
+    public async retrieve(minTime: number) {
+        if (!minTime) {
+            minTime = (new Date).getTime() - this.config.get('app.defaultTime')
+        }
+
+        const snapshot = await (<BlockResource> this.make(BlockResource)).ref()
+            .orderByChild('timestamp')
+            .startAt(minTime)
+            .once('value')
+
+        let blocks = (Object.values(snapshot.val()) as BlockResourceItem[])
+        return blocks
+    }
     /**
      * Read the version of the blockchain held by this host, as it currently exists.
      */
@@ -86,19 +100,28 @@ export class Blockchain extends Controller {
         return one(item)
     }
 
+    /**
+     * Get exposure notification from blockchain from timerange
+     */
+     public async getExposure() {
+        let date = this.request.input('date')
+        let minTime = Date.now() - date
+        let blocks = await this.retrieve(minTime)
+        let exposed: string[] = []
+        for (const block of blocks) {
+            let transactions = block.transactions
+            for (const item of transactions) {
+                if ((item as ExposureResourceItem).clientID) {
+                    exposed.push((item as ExposureResourceItem).clientID)
+                }
+            }
+        }
+        return many(exposed)
+    }
+
     public async check() {
         let minTime = this.request.input('minTime')
-        if (!minTime) {
-            minTime = (new Date).getTime() - this.config.get('app.defaultTime')
-        }
-
-        const snapshot = await (<BlockResource> this.make(BlockResource)).ref()
-            .orderByChild('timestamp')
-            .startAt(minTime)
-            .once('value')
-
-        let blocks = (Object.values(snapshot.val()) as BlockResourceItem[])
-        return many(blocks)
+        return many(await this.retrieve(minTime))
     }
 
     public async peer() {
