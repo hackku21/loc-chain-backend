@@ -227,7 +227,7 @@ export class Blockchain extends Unit {
             this.logging.verbose(`Making request to: ${peer.host}api/v1/chain/submit`)
             const result = await fetch(`${peer.host}api/v1/chain/submit`).then(res => res.json())
             console.log('got result after making request', result)
-            const blocks: unknown = result.data?.data?.records
+            const blocks: unknown = result.data?.records
             if ( Array.isArray(blocks) && blocks.every(block => {
                 return isBlockResourceItem(block)
             }) ) {
