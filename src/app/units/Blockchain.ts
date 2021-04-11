@@ -381,12 +381,9 @@ export class Blockchain extends Unit {
      */
     public async writeback() {
         if ( this.breakForExit ) return;
-        this.logging.info('Generating initial proof-of-elapsed-time. This will take a second...')
         this.nextWaitTime = this.random(this.MIN_WAIT_TIME, this.MAX_WAIT_TIME)
         this.lastBlock = this.getLastBlock()
         this.nextProof = await this.generateProofOfWork(this.lastBlock, this.nextWaitTime)
-
-        console.log('writeback approved chain', this.approvedChain)
 
         await Promise.all([
             this.firebase.ref('block').set(this.approvedChain.map(x => x.toItem())),
