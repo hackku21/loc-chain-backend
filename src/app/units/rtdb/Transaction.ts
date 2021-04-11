@@ -76,7 +76,6 @@ export class Transaction extends Unit {
                     })
                 }
             }
-            this.firebase.ref('transaction').set(newSnapshot)
         })
     }
 
