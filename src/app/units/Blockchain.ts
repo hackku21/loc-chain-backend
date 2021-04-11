@@ -14,6 +14,11 @@ import axios from "axios"
 import {collect, uuid_v4} from "@extollo/util"
 import {ExposureResourceItem} from "../rtdb/ExposureResource"
 
+/**
+ * Verify an OpenPGP signature based on an armored key.
+ * @param armoredKey
+ * @param armoredMessage
+ */
 async function pgpVerify(armoredKey: string, armoredMessage: string) {
     const [publicKeys, message] = await Promise.all([
         openpgp.readKey({ armoredKey }),
@@ -125,10 +130,13 @@ export class Blockchain extends Unit {
     @Inject()
     protected readonly config!: Config
 
+    /** The most-correct, approved chain according to this node. */
     protected approvedChain: Block[] = []
 
+    /** The peers this node will communicate with. */
     protected peers: Peer[] = []
 
+    /** If true, the writeback/refresh cycle will stop. */
     protected breakForExit = false
 
     /**
@@ -176,6 +184,7 @@ export class Blockchain extends Unit {
         this.breakForExit = true
     }
 
+    /** Load the initial data from the data sources into memory for fast access. */
     async initialLoad() {
         const [peers, chain] = await Promise.all([
             this.firebase.ref('peers')
@@ -236,6 +245,8 @@ export class Blockchain extends Unit {
         if ( !this.hasPeer(peer.host) ) {
             this.logging.info(`Registering peer: ${peer.host}`)
             const header = this.config.get('app.api_server_header')
+
+            this.peers.push(peer)
 
             try {
                 await axios.post(`${peer.host}api/v1/peer`, {
@@ -298,11 +309,15 @@ export class Blockchain extends Unit {
         ).every(Boolean)
     }
 
+    /**
+     * Perform the consensus algorithm among the peers of this node
+     * to push a block onto the chain.
+     */
     public async refresh() {
         if ( this.breakForExit ) return;
         this.logging.debug('Called refresh().')
 
-        const peers = await this.getPeers()
+        const peers = this.getPeers()
         const time_x_block: {[key: string]: Block} = {}
         const time_x_blocks: {[key: string]: Block[]} = {}
         const time_x_peer: {[key: string]: Peer | true} = {}
@@ -363,12 +378,18 @@ export class Blockchain extends Unit {
         await this.writeback()
     }
 
+    /**
+     * Get the current blockchain including the block submitted by this node.
+     */
     public getSubmitChain(): BlockResourceItem[] {
         const submit = this.getSubmitBlock()
         if ( !submit ) return this.approvedChain
         else return [...this.approvedChain, submit]
     }
 
+    /**
+     * Write the in-memory data back to persistent data stores.
+     */
     public async writeback() {
         if ( this.breakForExit ) return;
         this.logging.info('Generating initial proof-of-elapsed-time. This will take a second...')
@@ -386,6 +407,9 @@ export class Blockchain extends Unit {
         this.refresh()
     }
 
+    /**
+     * Get the Block instance that we want to submit to the chain, if we have any transactions.
+     */
     public getSubmitBlock(): Block | undefined {
         if ( !this.pendingTransactions?.length ) {
             return
@@ -422,6 +446,9 @@ export class Blockchain extends Unit {
         this.pendingTransactions.push(...exposures)
     }
 
+    /**
+     * Get the peer-to-peer identifier token.
+     */
     public getPeerToken() {
         return Buffer.from(this.genesisProof, 'utf-8')
             .toString('base64')
