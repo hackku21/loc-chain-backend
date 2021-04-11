@@ -70,7 +70,8 @@ export class Transaction extends Unit {
                     this.compare(left, right).then(match => {
                         if ( match ) {
                             this.blockchain.submitTransactions([left, right])
-                            newSnapshot = newSnapshot.filter( (item) => item !== left && item !== right )
+                            this.firebase.ref('transaction').child(left.key).remove()
+                            this.firebase.ref('transaction').child(right.key).remove()
                         }
                     })
                 }
