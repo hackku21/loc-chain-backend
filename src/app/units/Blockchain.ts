@@ -318,60 +318,49 @@ export class Blockchain extends Unit {
         this.logging.debug('Called refresh().')
 
         const peers = this.getPeers()
-        const time_x_block: {[key: string]: Block} = {}
-        const time_x_blocks: {[key: string]: Block[]} = {}
-        const time_x_peer: {[key: string]: Peer | true} = {}
+        let longestChain: Block[] = []
+        const chains = await Promise.all(
+            peers.map(peer => this.getPeerSubmit(peer))
+        )
 
-        await Promise.all(peers.map(async peer => {
-            const blocks: Block[] | undefined = await this.getPeerSubmit(peer)
-
-            if ( blocks && await this.validate(blocks) ) {
-                const block = blocks.slice(-1)[0]
-                if ( !block ) return  // TODO fixme
-
-                const penalty = blocks.slice(0, 10)
-                        .map(block => block.peer === peer.host)
-                        .filter(Boolean).length * this.PENALTY_INTERVAL
-                    * (Math.min(peers.length, this.MAX_PEERS_PENALTY))
-
-                block.waitTime += penalty
-
-                time_x_block[block.waitTime] = block
-                time_x_blocks[block.waitTime] = blocks.reverse()
-                time_x_peer[block.waitTime] = peer
-            } else {
-                console.log('validation fail!')
+        for ( const chain of chains ) {
+            if (
+                chain
+                && chain.length > longestChain.length
+                && await this.validate(chain)
+            ) {
+                longestChain = chain
             }
-        }))
-
-        console.log(time_x_blocks, time_x_peer, time_x_block)
-
-        const submitBlock = this.getSubmitBlock()
-        if ( submitBlock ) {
-            time_x_block[submitBlock.waitTime] = submitBlock
-            time_x_peer[submitBlock.waitTime] = true
         }
 
-        console.log('submit block', submitBlock)
-
-        const min = Math.min(...Object.keys(time_x_block).map(parseFloat))
-        const peer = time_x_peer[min]
-
-        console.log('peer?', peer)
-
-        if ( peer === true ) {
-            // Our version of the chain was accepted
-            this.approvedChain.push(submitBlock!)
-            this.pendingTransactions = []
-        } else if ( peer ) {
-            // A different server's chain was accepted
-            this.approvedChain = (time_x_blocks[min] || []).map(block => {
-                if (!block.transactions) {
-                    block.transactions = []
+        const submitted = this.getSubmitBlock()
+        if ( (this.approvedChain.length + (submitted ? 1 : 0)) > longestChain.length ) {
+            // Our chain is longer, so push the submit block onto it
+            if ( submitted ) {
+                this.approvedChain.push(submitted)
+                this.pendingTransactions = []
+            }
+        } else {
+            const temp: Block[] = this.approvedChain.reverse()
+            this.approvedChain = longestChain.map(x => {
+                if ( !x.transactions ) {
+                    x.transactions = []
                 }
 
-                return block
+                return x
             })
+
+            for ( const block of temp ) {
+                const found = this.approvedChain.some(otherBlock => {
+                    return otherBlock.uuid === block.uuid
+                })
+
+                if ( !found ) {
+                    this.pendingTransactions.concat(...(block.transactions || []))
+                } else {
+                    break
+                }
+            }
         }
 
         console.log('approved chain', this.approvedChain)
@@ -443,7 +432,14 @@ export class Blockchain extends Unit {
      * @param exposures
      */
     public submitExposures(...exposures: ExposureResourceItem[]) {
-        this.pendingTransactions.push(...exposures)
+        // @ts-ignore
+        this.pendingTransactions.push(...exposures.map(exposure => {
+            if ( !exposure.uuid ) {
+                exposure.uuid = uuid_v4()
+            }
+
+            return exposure
+        }))
     }
 
     /**
@@ -503,6 +499,7 @@ export class Blockchain extends Unit {
      */
     protected getEncounterTransaction(item: TransactionResourceItem): BlockEncounterTransaction {
         return {
+            uuid: uuid_v4(),
             combinedHash: item.combinedHash,
             timestamp: item.timestamp,
             encodedGPSLocation: item.encodedGPSLocation,
