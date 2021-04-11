@@ -272,6 +272,10 @@ export class Blockchain extends Unit {
         const blocks = collect<Block>(chain)
         return (
             await blocks.promiseMap(async (block, idx) => {
+                if ( await block.isGenesis() ) {
+                    return true
+                }
+
                 const previous: Block | undefined = blocks.at(idx - 1)
                 if ( !previous ) {
                     this.logging.debug(`Chain is invalid: block ${idx} is missing previous ${idx - 1}.`)
@@ -293,10 +297,6 @@ export class Blockchain extends Unit {
                     })
 
                     return false
-                }
-
-                if ( await block.isGenesis() ) {
-                    return true
                 }
 
                 if ( !(await this.validateProofOfWork(block, previous)) ) {
