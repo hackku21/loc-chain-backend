@@ -323,14 +323,10 @@ export class Blockchain extends Unit {
         this.logging.debug({peers})
 
         let longestChain: Block[] = []
-        const chains = await Promise.all(
-            peers.map(peer => this.getPeerSubmit(peer))
-        )
+        for ( const peer of peers ) {
+            const chain = await this.getPeerSubmit(peer)
+            console.log('got chain', chain)
 
-        this.logging.debug('Got peer chain info:')
-        this.logging.debug(chains)
-
-        for ( const chain of chains ) {
             if (
                 chain
                 && chain.length > longestChain.length
