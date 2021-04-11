@@ -63,15 +63,17 @@ export class Transaction extends Unit {
      */
     public async up() {
         this.firebase.ref('transaction').on('value', snapshot => {
-            if ( !Array.isArray(snapshot.val()) || snapshot.val().length < 2 ) return;
-            let newSnapshot = [...snapshot.val()]
-            for ( const left of snapshot.val() ) {
-                for ( const right of snapshot.val() ) {
+            for ( const leftKey in snapshot.val() ) {
+                const left = snapshot.val()[leftKey]
+
+                for ( const rightKey in snapshot.val() ) {
+                    const right = snapshot.val()[rightKey]
+
                     this.compare(left, right).then(match => {
                         if ( match ) {
                             this.blockchain.submitTransactions([left, right])
-                            this.firebase.ref('transaction').child(left.key).remove()
-                            this.firebase.ref('transaction').child(right.key).remove()
+                            this.firebase.ref('transaction').child(leftKey).remove()
+                            this.firebase.ref('transaction').child(rightKey).remove()
                         }
                     })
                 }
