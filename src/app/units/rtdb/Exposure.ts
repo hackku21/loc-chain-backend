@@ -45,6 +45,8 @@ export class Exposure extends Unit {
      */
     public async up() {
         this.firebase.ref('exposure').on('child_added', (snapshot) => {
+            this.blockchain.submitExposures(snapshot.val())
+            this.firebase.ref('exposure').child(snapshot.val()).remove()
             /*this.logging.debug('Received child_added event for exposures reference.')
             if ( !this.claim() ) return
             // await this.firebase.trylock('block', 'Exposure_child_added')
@@ -59,8 +61,6 @@ export class Exposure extends Unit {
 
             this.release()
             // await this.firebase.unlock('block')*/
-
-            this.blockchain.submitExposures(snapshot.val())
         })
     }
 
