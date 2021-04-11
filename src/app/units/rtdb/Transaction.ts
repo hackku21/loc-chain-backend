@@ -64,70 +64,19 @@ export class Transaction extends Unit {
     public async up() {
         this.firebase.ref('transaction').on('value', snapshot => {
             if ( !Array.isArray(snapshot.val()) || snapshot.val().length < 2 ) return;
-
+            let newSnapshot = [...snapshot.val()]
             for ( const left of snapshot.val() ) {
                 for ( const right of snapshot.val() ) {
                     this.compare(left, right).then(match => {
                         if ( match ) {
                             this.blockchain.submitTransactions([left, right])
+                            newSnapshot = newSnapshot.filter( (item) => item !== left && item !== right )
                         }
                     })
                 }
             }
+            this.firebase.ref('transaction').set(newSnapshot)
         })
-
-        /*this.firebase.ref("transaction").on("child_added", async () => {
-            this.logging.debug('Received child_added event for transactions reference.')
-            // if ( !this.claim() ) return
-            // await this.firebase.trylock('block', 'Transaction_child_added')
-
-            // array of pairs of transaction resource items
-            let groupedTransactions: [TransactionResourceItem, TransactionResourceItem][] = []
-            // collection of transaction resource items
-            let transactions = await TransactionResource.collect().collect()
-            // await this.firebase.unlock('block')
-
-            // compare each item
-            await transactions.promiseMap(async transaction1 => {
-                // for each item that is not itself
-                await transactions.where('combinedHash', '!=', transaction1.combinedHash)
-                    // get a second item
-                    .promiseMap(async transaction2 => {
-                        //if the item matches
-                        if ( await this.compareTransactions(transaction1, transaction2) ) {
-                            // and remove the two matching items
-                            transactions = transactions.whereNotIn("combinedHash", [transaction1.combinedHash, transaction2.combinedHash])
-                            // insert grouped items into groupedTransactions
-                            groupedTransactions.push([transaction1, transaction2])
-                        }
-                    })
-            })
-
-            const seenCombinedHashes: string[] = []
-            groupedTransactions = groupedTransactions.filter(group => {
-                const key = group.map(x => x.combinedHash).sort().join('-')
-                if ( !seenCombinedHashes.includes(key) ) {
-                    seenCombinedHashes.push(key)
-                    return true
-                }
-
-                return false
-            })
-
-            // await this.firebase.trylock('block', 'Transaction_submitTransactions')
-            for (const group of groupedTransactions) {
-                const block = await this.blockchain.submitTransactions(group)
-
-                this.logging.verbose('Created block:')
-                this.logging.verbose(block)
-
-                await this.firebase.ref("transaction").child(group[0].firebaseID).remove()
-                await this.firebase.ref("transaction").child(group[1].firebaseID).remove()
-            }
-
-            // this.release()
-            // await this.firebase.unlock('block')
-        })*/
     }
 
     /**
