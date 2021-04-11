@@ -14,9 +14,6 @@ import { Blockchain } from "../Blockchain"
  */
 @Singleton()
 export class Transaction extends Unit {
-    /** True if currently processing transactions. */
-    private processing: boolean = false
-
     @Inject()
     protected readonly firebase!: FirebaseUnit
 
@@ -26,64 +23,69 @@ export class Transaction extends Unit {
     @Inject()
     protected readonly logging!: Logging
 
-    /** Claim the right to process transactions. Returns true if the right was granted. */
-    claim() {
-        if ( !this.processing ) {
-            this.processing = true
-            return true
-        }
-
-        return false
-    }
-
-    /** Release the right to claim transactions. */
-    release() {
-        this.processing = false
-    }
-
-    /**
-     * Given two transactions, determine whether the came from a valid interaction.
-     * That is, do the two transactions vouch for each-other cryptographically.
-     * @param transaction1
-     * @param transaction2
-     */
-    public async compareTransactions(transaction1: TransactionResourceItem, transaction2: TransactionResourceItem) {
-        // verify signature
-        const result1 = await openpgp.verify({
-            publicKeys: await openpgp.readKey({
-                armoredKey: transaction2.partnerPublicKey
+    async compare(t1: TransactionResourceItem, t2: TransactionResourceItem) {
+        const [t2key, t1sig, t1key, t2sig] = await Promise.all([
+            openpgp.readKey({
+                armoredKey: t2.partnerPublicKey
             }),
-            message: await openpgp.readMessage({
-                armoredMessage: transaction1.validationSignature,
+            openpgp.readMessage({
+                armoredMessage: t1.validationSignature,
             }),
-        })
+            openpgp.readKey({
+                armoredKey: t1.partnerPublicKey
+            }),
+            openpgp.readMessage({
+                armoredMessage: t2.validationSignature,
+            }),
+        ])
 
-        const result2 = await openpgp.verify({
-            publicKeys: await openpgp.readKey({
-                armoredKey: transaction1.partnerPublicKey
+        const [r1, r2] = await Promise.all([
+            openpgp.verify({
+                publicKeys: t2key,
+                message: t1sig,
             }),
-            message: await openpgp.readMessage({
-                armoredMessage: transaction2.validationSignature,
+            openpgp.verify({
+                publicKeys: t1key,
+                message: t2sig,
             }),
-        })
+        ])
 
-        return (await result1.signatures[0].verified) && (await result2.signatures[0].verified)
+        const [v1, v2] = await Promise.all([
+            r1.signatures[0]?.verified,
+            r2.signatures[0]?.verified
+        ])
+
+        return v1 && v2
     }
 
     /**
      * Subscribe to the transactions reference and wait for new transactions to be added.
      */
     public async up() {
-        this.firebase.ref("transaction").on("child_added", async () => {
+        this.firebase.ref('transaction').on('value', snapshot => {
+            if ( !Array.isArray(snapshot.val()) || snapshot.val().length < 2 ) return;
+
+            for ( const left of snapshot.val() ) {
+                for ( const right of snapshot.val() ) {
+                    this.compare(left, right).then(match => {
+                        if ( match ) {
+                            this.blockchain.submitTransactions([left, right])
+                        }
+                    })
+                }
+            }
+        })
+
+        /*this.firebase.ref("transaction").on("child_added", async () => {
             this.logging.debug('Received child_added event for transactions reference.')
-            if ( !this.claim() ) return
-            await this.firebase.trylock('block', 'Transaction_child_added')
+            // if ( !this.claim() ) return
+            // await this.firebase.trylock('block', 'Transaction_child_added')
 
             // array of pairs of transaction resource items
             let groupedTransactions: [TransactionResourceItem, TransactionResourceItem][] = []
             // collection of transaction resource items
             let transactions = await TransactionResource.collect().collect()
-            await this.firebase.unlock('block')
+            // await this.firebase.unlock('block')
 
             // compare each item
             await transactions.promiseMap(async transaction1 => {
@@ -112,7 +114,7 @@ export class Transaction extends Unit {
                 return false
             })
 
-            await this.firebase.trylock('block', 'Transaction_submitTransactions')
+            // await this.firebase.trylock('block', 'Transaction_submitTransactions')
             for (const group of groupedTransactions) {
                 const block = await this.blockchain.submitTransactions(group)
 
@@ -123,9 +125,9 @@ export class Transaction extends Unit {
                 await this.firebase.ref("transaction").child(group[1].firebaseID).remove()
             }
 
-            this.release()
-            await this.firebase.unlock('block')
-        })
+            // this.release()
+            // await this.firebase.unlock('block')
+        })*/
     }
 
     /**

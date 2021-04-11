@@ -38,8 +38,7 @@ export class Blockchain extends Controller {
      * most recent submission, that has NOT been accepted yet.
      */
     public async readBlockchainSubmission() {
-        const resultOfPeerRefresh = !!this.request.query.resultOfPeerRefresh
-        return many((await this.blockchain.getSubmitChain(resultOfPeerRefresh)).map(x => {
+        return many((await this.blockchain.getSubmitChain()).map(x => {
             // @ts-ignore
             delete x.firebaseID
             return x
@@ -62,7 +61,6 @@ export class Blockchain extends Controller {
     public async postTransaction() {
         const item: TransactionResourceItem = {
             firebaseID: '',
-            seqID: -1,
             combinedHash: String(this.request.input('combinedHash')),
             timestamp: parseInt(String(this.request.input('timestamp'))),
             encodedGPSLocation: String(this.request.input('encodedGPSLocation')),
@@ -80,7 +78,6 @@ export class Blockchain extends Controller {
     public async postExposure() {
         const item: ExposureResourceItem = {
             firebaseID: '',
-            seqID: -1,
             clientID: String(this.request.input('clientID')),
             timestamp: parseInt(String(this.request.input('timestamp'))),
         }
@@ -94,12 +91,13 @@ export class Blockchain extends Controller {
         if (!minTime) {
             minTime = (new Date).getTime() - this.config.get('app.defaultTime')
         }
+
         const snapshot = await (<BlockResource> this.make(BlockResource)).ref()
             .orderByChild('timestamp')
             .startAt(minTime)
             .once('value')
-    
-        let blocks = (Object.values(snapshot.val()) as BlockResourceItem[]).filter((item: BlockResourceItem) => item.seqID !== 0)
+
+        let blocks = (Object.values(snapshot.val()) as BlockResourceItem[])
         return many(blocks)
     }
 

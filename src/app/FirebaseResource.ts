@@ -8,8 +8,7 @@ import {Application} from "@extollo/lib"
  * Base interface for an item in a Firebase RTDB collection.
  */
 export interface FirebaseResourceItem {
-    firebaseID: string;
-    seqID: number;
+    firebaseID?: string;
 }
 
 /**
@@ -29,20 +28,10 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
         return Application.getApplication().make<FirebaseUnit>(FirebaseUnit).ref(this.refName)
     }
 
-    /** Get the next sequential ID. */
-    async getNextID(): Promise<number> {
-        return new Promise<number>((res, rej) => {
-            this.ref().orderByChild('seqID')
-                .once('value', snapshot => {
-                    res((this.resolveObject(snapshot.val()).reverse()?.[0]?.seqID ?? -1) + 1)
-                }, rej)
-        })
-    }
-
     /** Get the record at the ith index. */
     async at(i: number): Promise<T | undefined> {
         return new Promise<T | undefined>((res, rej) => {
-            this.ref().orderByChild('seqID')
+            this.ref().orderByKey()
                 .startAt(i).endAt(i)
                 .once('value', snapshot => res(this.resolveObject(snapshot.val())[0]), rej)
         })
@@ -51,7 +40,7 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
     /** Fetch an array of records in a range. */
     async range(start: number, end: number): Promise<Collection<T>> {
         return new Promise<Collection<T>>((res, rej) => {
-            this.ref().orderByChild('seqID')
+            this.ref().orderByKey()
                 .startAt(start).endAt(end)
                 .once('value', snapshot => {
                     res(new Collection<T>(this.resolveObject(snapshot.val())))
@@ -61,26 +50,13 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
 
     /** Count the items in the collection. */
     async count(): Promise<number> {
+        console.log('[COUNT CALLED ON FIREBASE RESOURCE]')
         return new Promise<number>((res, rej) => {
-            this.ref().orderByChild('seqID')
+            this.ref().orderByKey()
                 .once('value', snapshot => {
                     res(this.resolveObject(snapshot.val()).length)
                 }, rej)
         })
-    }
-
-    findNextId(collection: FirebaseResourceItem[]) {
-        if ( !collection.length ) return 0
-
-        let maxSeq = -1
-        for ( const item of collection ) {
-            if ( !item ) continue
-            if ( !isNaN(item.seqID) && item.seqID > maxSeq ) {
-                maxSeq = item.seqID
-            }
-        }
-
-        return maxSeq + 1
     }
 
     /**
@@ -88,7 +64,9 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
      * @param item
      */
     async push(item: T): Promise<T> {
-        await this.ref().transaction((collection) => {
+        await this.ref().push(item)
+        return item
+        /*await this.ref().transaction((collection) => {
             if ( !collection ) collection = []
             if ( typeof collection === 'object' ) collection = Object.values(collection)
             item.seqID = this.findNextId(collection)
@@ -97,6 +75,7 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
             delete item.firebaseID
             collection.push(this.filter(item))
 
+            console.log('item seqID', collection)
             return collection
         })
 
@@ -111,7 +90,7 @@ export class FirebaseResource<T extends FirebaseResourceItem> extends Iterable<T
                 })
         })
 
-        return item
+        return item*/
     }
 
     /**

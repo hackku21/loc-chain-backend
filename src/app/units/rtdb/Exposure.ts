@@ -44,8 +44,8 @@ export class Exposure extends Unit {
      * Subscribe to the transactions reference and wait for new transactions to be added.
      */
     public async up() {
-        this.firebase.ref('exposure').on('child_added', async (snapshot) => {
-            this.logging.debug('Received child_added event for exposures reference.')
+        this.firebase.ref('exposure').on('child_added', (snapshot) => {
+            /*this.logging.debug('Received child_added event for exposures reference.')
             if ( !this.claim() ) return
             // await this.firebase.trylock('block', 'Exposure_child_added')
 
@@ -58,7 +58,9 @@ export class Exposure extends Unit {
                 await (<ExposureResource> this.make(ExposureResource)).ref().child(snapshot.key).remove()
 
             this.release()
-            // await this.firebase.unlock('block')
+            // await this.firebase.unlock('block')*/
+
+            this.blockchain.submitExposures(snapshot.val())
         })
     }
 
@@ -67,6 +69,6 @@ export class Exposure extends Unit {
      */
     public async down() {
         // Release all subscriptions before shutdown
-        this.firebase.ref("transaction").off()
+        this.firebase.ref('exposure').off()
     }
 }
