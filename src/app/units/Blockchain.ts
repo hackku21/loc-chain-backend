@@ -224,6 +224,7 @@ export class Blockchain extends Unit {
      */
     public async getPeerSubmit(peer: Peer): Promise<Block[] | undefined> {
         try {
+            this.logging.verbose(`Making request to: ${peer.host}api/v1/chain/submit`)
             const result = await fetch(`${peer.host}api/v1/chain/submit`).then(res => res.json())
             const blocks: unknown = result.data?.data?.records
             if ( Array.isArray(blocks) && blocks.every(block => {
@@ -319,10 +320,15 @@ export class Blockchain extends Unit {
         this.logging.debug('Called refresh().')
 
         const peers = this.getPeers()
+        this.logging.debug({peers})
+
         let longestChain: Block[] = []
         const chains = await Promise.all(
             peers.map(peer => this.getPeerSubmit(peer))
         )
+
+        this.logging.debug('Got peer chain info:')
+        this.logging.debug(chains)
 
         for ( const chain of chains ) {
             if (
@@ -331,6 +337,8 @@ export class Blockchain extends Unit {
                 && await this.validate(chain)
             ) {
                 longestChain = chain
+            } else {
+                this.logging.debug('Failed validation!')
             }
         }
 
