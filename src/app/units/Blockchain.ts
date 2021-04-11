@@ -190,7 +190,7 @@ export class Blockchain extends Unit {
 
         this.logging.debug({peers, chain})
 
-        this.approvedChain = chain.map((item: BlockResourceItem) => new Block(item))
+        this.approvedChain = (chain || []).map((item: BlockResourceItem) => new Block(item))
         this.peers = peers || []
     }
 
