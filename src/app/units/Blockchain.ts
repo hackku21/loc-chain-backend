@@ -10,7 +10,7 @@ import {
 import {TransactionResourceItem} from "../rtdb/TransactionResource"
 import * as openpgp from "openpgp"
 import * as crypto from "crypto"
-import axios from "axios"
+import fetch from "node-fetch"
 import {collect, uuid_v4} from "@extollo/util"
 import {ExposureResourceItem} from "../rtdb/ExposureResource"
 
@@ -224,7 +224,7 @@ export class Blockchain extends Unit {
      */
     public async getPeerSubmit(peer: Peer): Promise<Block[] | undefined> {
         try {
-            const result = await axios.get(`${peer.host}api/v1/chain/submit`)
+            const result = await fetch(`${peer.host}api/v1/chain/submit`).then(res => res.json())
             const blocks: unknown = result.data?.data?.records
             if ( Array.isArray(blocks) && blocks.every(block => {
                 return isBlockResourceItem(block)
@@ -249,13 +249,14 @@ export class Blockchain extends Unit {
             this.peers.push(peer)
 
             try {
-                await axios.post(`${peer.host}api/v1/peer`, {
-                    host: this.getBaseURL(),
-                }, {
+                await fetch(`${peer.host}api/v1/peer`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        host: this.getBaseURL(),
+                    }),
                     headers: {
-                        [header]: this.getPeerToken(),
                         'content-type': 'application/json',
-                    }
+                    },
                 })
             } catch (e) {
                 this.logging.error(e)
