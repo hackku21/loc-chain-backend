@@ -10,6 +10,7 @@ export interface BlockEncounterTransaction {
     combinedHash: string;
     timestamp: number;
     encodedGPSLocation: string;
+    uuid: string;
 }
 
 /**
@@ -18,6 +19,7 @@ export interface BlockEncounterTransaction {
 export interface BlockInfectionTransaction {
     clientID: string;
     timestamp: number;
+    uuid: string;
 }
 
 /** Union type of all possible block transactions. */

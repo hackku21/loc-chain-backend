@@ -7,6 +7,7 @@ import {AsyncCollection} from "@extollo/util"
  * Interface representing a client-submitted encounter transaction.
  */
 export interface ExposureResourceItem extends FirebaseResourceItem {
+    uuid?: string;
     clientID: string;  // the exposed client's ID - used as one half of the hashes
     timestamp: number;  // the unix-time in milliseconds when the interaction occurred
 }
